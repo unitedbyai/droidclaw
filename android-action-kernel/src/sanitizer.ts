@@ -169,3 +169,81 @@ export function getInteractiveElements(xmlContent: string): UIElement[] {
   walk(parsed, "root", 0);
   return elements;
 }
+
+// ===========================================
+// Smart Element Filtering (Phase 2A)
+// ===========================================
+
+/**
+ * Compact representation sent to the LLM — only essential fields.
+ * Non-default flags are included conditionally to minimize tokens.
+ */
+export interface CompactUIElement {
+  text: string;
+  center: [number, number];
+  action: UIElement["action"];
+  // Only included when non-default
+  enabled?: false;
+  checked?: true;
+  focused?: true;
+  hint?: string;
+  editable?: true;
+  scrollable?: true;
+}
+
+/**
+ * Strips a full UIElement to its compact form, omitting default-valued flags.
+ */
+export function compactElement(el: UIElement): CompactUIElement {
+  const compact: CompactUIElement = {
+    text: el.text,
+    center: el.center,
+    action: el.action,
+  };
+  if (!el.enabled) compact.enabled = false;
+  if (el.checked) compact.checked = true;
+  if (el.focused) compact.focused = true;
+  if (el.hint) compact.hint = el.hint;
+  if (el.editable) compact.editable = true;
+  if (el.scrollable) compact.scrollable = true;
+  return compact;
+}
+
+/**
+ * Scores an element for relevance to the LLM.
+ */
+function scoreElement(el: UIElement): number {
+  let score = 0;
+  if (el.enabled) score += 10;
+  if (el.editable) score += 8;
+  if (el.focused) score += 6;
+  if (el.clickable || el.longClickable) score += 5;
+  if (el.text) score += 3;
+  return score;
+}
+
+/**
+ * Deduplicates elements by center coordinates (within tolerance),
+ * scores them, and returns the top N as compact elements.
+ */
+export function filterElements(
+  elements: UIElement[],
+  limit: number
+): CompactUIElement[] {
+  // Deduplicate by center coordinates (5px tolerance)
+  const seen = new Map<string, UIElement>();
+  for (const el of elements) {
+    const bucketX = Math.round(el.center[0] / 5) * 5;
+    const bucketY = Math.round(el.center[1] / 5) * 5;
+    const key = `${bucketX},${bucketY}`;
+    const existing = seen.get(key);
+    if (!existing || scoreElement(el) > scoreElement(existing)) {
+      seen.set(key, el);
+    }
+  }
+
+  // Score, sort descending, take top N
+  const deduped = Array.from(seen.values());
+  deduped.sort((a, b) => scoreElement(b) - scoreElement(a));
+  return deduped.slice(0, limit).map(compactElement);
+}

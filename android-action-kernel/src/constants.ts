@@ -37,12 +37,38 @@ export const SCREEN_CENTER_X = 540;
 export const SCREEN_CENTER_Y = 1200;
 
 // Swipe coordinates: [start_x, start_y, end_x, end_y]
+// These are the fallback values for 1080x2400 screens
 export const SWIPE_COORDS: Record<string, [number, number, number, number]> = {
   up: [SCREEN_CENTER_X, 1500, SCREEN_CENTER_X, 500],
   down: [SCREEN_CENTER_X, 500, SCREEN_CENTER_X, 1500],
   left: [800, SCREEN_CENTER_Y, 200, SCREEN_CENTER_Y],
   right: [200, SCREEN_CENTER_Y, 800, SCREEN_CENTER_Y],
 };
+
+/**
+ * Derives swipe coordinates from actual screen dimensions using ratios
+ * from the hardcoded 1080x2400 reference values.
+ */
+export function computeSwipeCoords(
+  width: number,
+  height: number
+): Record<string, [number, number, number, number]> {
+  const cx = Math.floor(width / 2);
+  const cy = Math.floor(height / 2);
+  // Vertical swipe: from 62.5% to 20.8% of height (mirrors 1500→500 on 2400h)
+  const vTop = Math.floor(height * 0.208);
+  const vBottom = Math.floor(height * 0.625);
+  // Horizontal swipe: from 74% to 18.5% of width (mirrors 800→200 on 1080w)
+  const hLeft = Math.floor(width * 0.185);
+  const hRight = Math.floor(width * 0.741);
+
+  return {
+    up: [cx, vBottom, cx, vTop],
+    down: [cx, vTop, cx, vBottom],
+    left: [hRight, cy, hLeft, cy],
+    right: [hLeft, cy, hRight, cy],
+  };
+}
 export const SWIPE_DURATION_MS = "300";
 export const LONG_PRESS_DURATION_MS = "1000";
 
@@ -76,3 +102,17 @@ export const DEFAULT_STEP_DELAY = 2.0;
 export const DEFAULT_MAX_RETRIES = 3;
 export const DEFAULT_STUCK_THRESHOLD = 3;
 export const DEFAULT_VISION_ENABLED = true;
+
+// Phase 2: Context Quality
+export const DEFAULT_MAX_ELEMENTS = 40;
+export const DEFAULT_LOG_DIR = "logs";
+
+// Phase 3: Vision Mode
+export type VisionMode = "off" | "fallback" | "always";
+export const DEFAULT_VISION_MODE: VisionMode = "fallback";
+
+// Phase 4: Multi-turn Memory
+export const DEFAULT_MAX_HISTORY_STEPS = 10;
+
+// Phase 5: Streaming
+export const DEFAULT_STREAMING_ENABLED = true;

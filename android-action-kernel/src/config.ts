@@ -15,7 +15,12 @@ import {
   DEFAULT_BEDROCK_MODEL,
   DEFAULT_MAX_RETRIES,
   DEFAULT_STUCK_THRESHOLD,
-  DEFAULT_VISION_ENABLED,
+  DEFAULT_MAX_ELEMENTS,
+  DEFAULT_LOG_DIR,
+  DEFAULT_VISION_MODE,
+  DEFAULT_MAX_HISTORY_STEPS,
+  DEFAULT_STREAMING_ENABLED,
+  type VisionMode,
 } from "./constants.js";
 
 function env(key: string, fallback = ""): string {
@@ -36,8 +41,20 @@ export const Config = {
   MAX_RETRIES: parseInt(env("MAX_RETRIES", String(DEFAULT_MAX_RETRIES)), 10),
   STUCK_THRESHOLD: parseInt(env("STUCK_THRESHOLD", String(DEFAULT_STUCK_THRESHOLD)), 10),
 
-  // Vision fallback (when accessibility tree is empty)
-  VISION_ENABLED: env("VISION_ENABLED", String(DEFAULT_VISION_ENABLED)) === "true",
+  // Vision mode: "off" | "fallback" (only when tree empty) | "always" (every step)
+  VISION_MODE: (env("VISION_MODE", DEFAULT_VISION_MODE) as VisionMode),
+
+  // Smart element filtering
+  MAX_ELEMENTS: parseInt(env("MAX_ELEMENTS", String(DEFAULT_MAX_ELEMENTS)), 10),
+
+  // Session logging
+  LOG_DIR: env("LOG_DIR", DEFAULT_LOG_DIR),
+
+  // Multi-turn memory
+  MAX_HISTORY_STEPS: parseInt(env("MAX_HISTORY_STEPS", String(DEFAULT_MAX_HISTORY_STEPS)), 10),
+
+  // Streaming responses
+  STREAMING_ENABLED: env("STREAMING_ENABLED", String(DEFAULT_STREAMING_ENABLED)) === "true",
 
   // LLM Provider: "groq", "openai", "bedrock", or "openrouter"
   LLM_PROVIDER: env("LLM_PROVIDER", "groq"),

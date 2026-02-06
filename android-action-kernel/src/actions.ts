@@ -20,6 +20,7 @@ import {
   LONG_PRESS_DURATION_MS,
   DEVICE_SCREENSHOT_PATH,
   LOCAL_SCREENSHOT_PATH,
+  computeSwipeCoords,
 } from "./constants.js";
 
 export interface ActionDecision {
@@ -37,6 +38,10 @@ export interface ActionDecision {
   command?: string;
   // screenshot action
   filename?: string;
+  // planning fields (Phase 4B)
+  think?: string;
+  plan?: string[];
+  planProgress?: string;
 }
 
 export interface ActionResult {
@@ -73,6 +78,68 @@ export function runAdbCommand(command: string[], retries = Config.MAX_RETRIES): 
   }
 
   return "";
+}
+
+// ===========================================
+// Device Intelligence (Phase 1)
+// ===========================================
+
+/** Module-level dynamic swipe coords, set by initDeviceContext() */
+let dynamicSwipeCoords: Record<string, [number, number, number, number]> | null = null;
+
+/**
+ * Detects the connected device's screen resolution via ADB.
+ * Returns [width, height] or null on failure.
+ */
+export function getScreenResolution(): [number, number] | null {
+  try {
+    const output = runAdbCommand(["shell", "wm", "size"]);
+    // Try "Override size:" first, then "Physical size:"
+    const overrideMatch = output.match(/Override size:\s*(\d+)x(\d+)/);
+    if (overrideMatch) {
+      return [parseInt(overrideMatch[1], 10), parseInt(overrideMatch[2], 10)];
+    }
+    const physicalMatch = output.match(/Physical size:\s*(\d+)x(\d+)/);
+    if (physicalMatch) {
+      return [parseInt(physicalMatch[1], 10), parseInt(physicalMatch[2], 10)];
+    }
+  } catch {
+    console.log("Warning: Could not detect screen resolution.");
+  }
+  return null;
+}
+
+/**
+ * Detects the currently running foreground app.
+ * Returns "package/activity" or null on failure.
+ */
+export function getForegroundApp(): string | null {
+  try {
+    const output = runAdbCommand([
+      "shell", "dumpsys", "activity", "activities",
+    ]);
+    // Match mResumedActivity line
+    const match = output.match(/mResumedActivity.*?(\S+\/\S+)/);
+    if (match) {
+      return match[1].replace("}", "");
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/**
+ * Stores dynamic swipe coordinates based on detected resolution.
+ * Must be called once at startup.
+ */
+export function initDeviceContext(resolution: [number, number]): void {
+  dynamicSwipeCoords = computeSwipeCoords(resolution[0], resolution[1]);
+}
+
+/** Returns dynamic swipe coords if set, otherwise falls back to hardcoded defaults. */
+function getSwipeCoords(): Record<string, [number, number, number, number]> {
+  return dynamicSwipeCoords ?? SWIPE_COORDS;
 }
 
 /**
@@ -156,7 +223,8 @@ function executeEnter(): ActionResult {
 
 function executeSwipe(action: ActionDecision): ActionResult {
   const direction = action.direction ?? "up";
-  const coords = SWIPE_COORDS[direction] ?? SWIPE_COORDS["up"];
+  const swipeCoords = getSwipeCoords();
+  const coords = swipeCoords[direction] ?? swipeCoords["up"];
 
   console.log(`Swiping ${direction}`);
   runAdbCommand([

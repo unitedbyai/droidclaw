@@ -5,11 +5,17 @@
  * Uses LLMs to make decisions based on screen context.
  *
  * Features:
- *   - Perception → Reasoning → Action loop
+ *   - Perception -> Reasoning -> Action loop
  *   - Screen state diffing (stuck loop detection)
  *   - Error recovery with retries
- *   - Vision fallback when accessibility tree is empty
+ *   - Vision fallback & always-on multimodal screenshots
  *   - Dynamic early exit on goal completion
+ *   - Smart element filtering (compact JSON, top-N scoring)
+ *   - Multi-turn conversation memory
+ *   - Multi-step planning (think/plan/planProgress)
+ *   - Streaming LLM responses
+ *   - Session logging with crash-safe partial writes
+ *   - Auto-detect screen resolution & foreground app
  *   - 15 actions: tap, type, enter, swipe, home, back, wait, done,
  *     longpress, screenshot, launch, clear, clipboard_get, clipboard_set, shell
  *
@@ -23,55 +29,73 @@ import { Config } from "./config.js";
 import {
   executeAction,
   runAdbCommand,
+  getScreenResolution,
+  getForegroundApp,
+  initDeviceContext,
   type ActionDecision,
   type ActionResult,
 } from "./actions.js";
-import { getLlmProvider, type LLMProvider } from "./llm-providers.js";
+import {
+  getLlmProvider,
+  trimMessages,
+  SYSTEM_PROMPT,
+  type LLMProvider,
+  type ChatMessage,
+  type ContentPart,
+} from "./llm-providers.js";
 import {
   getInteractiveElements,
   computeScreenHash,
+  filterElements,
   type UIElement,
 } from "./sanitizer.js";
 import {
   DEVICE_SCREENSHOT_PATH,
   LOCAL_SCREENSHOT_PATH,
 } from "./constants.js";
+import { SessionLogger } from "./logger.js";
 
 // ===========================================
 // Screen Perception
 // ===========================================
 
+interface ScreenState {
+  elements: UIElement[];
+  compactJson: string;
+}
+
 /**
- * Dumps the current UI XML and returns parsed elements + JSON string.
+ * Dumps the current UI XML and returns parsed elements + compact filtered JSON for the LLM.
  */
-function getScreenState(): { elements: UIElement[]; json: string } {
+function getScreenState(): ScreenState {
   try {
     runAdbCommand(["shell", "uiautomator", "dump", Config.SCREEN_DUMP_PATH]);
     runAdbCommand(["pull", Config.SCREEN_DUMP_PATH, Config.LOCAL_DUMP_PATH]);
   } catch {
     console.log("Warning: ADB screen capture failed.");
-    return { elements: [], json: "Error: Could not capture screen." };
+    return { elements: [], compactJson: "Error: Could not capture screen." };
   }
 
   if (!existsSync(Config.LOCAL_DUMP_PATH)) {
-    return { elements: [], json: "Error: Could not capture screen." };
+    return { elements: [], compactJson: "Error: Could not capture screen." };
   }
 
   const xmlContent = readFileSync(Config.LOCAL_DUMP_PATH, "utf-8");
   const elements = getInteractiveElements(xmlContent);
-  return { elements, json: JSON.stringify(elements, null, 2) };
+  const compact = filterElements(elements, Config.MAX_ELEMENTS);
+  return { elements, compactJson: JSON.stringify(compact) };
 }
 
 /**
- * Captures a screenshot and returns the local file path.
- * Used as a vision fallback when the accessibility tree is empty.
+ * Captures a screenshot and returns the base64-encoded PNG, or null on failure.
  */
-function captureScreenshot(): string | null {
+function captureScreenshotBase64(): string | null {
   try {
     runAdbCommand(["shell", "screencap", "-p", DEVICE_SCREENSHOT_PATH]);
     runAdbCommand(["pull", DEVICE_SCREENSHOT_PATH, LOCAL_SCREENSHOT_PATH]);
     if (existsSync(LOCAL_SCREENSHOT_PATH)) {
-      return LOCAL_SCREENSHOT_PATH;
+      const buffer = readFileSync(LOCAL_SCREENSHOT_PATH);
+      return Buffer.from(buffer).toString("base64");
     }
   } catch {
     console.log("Warning: Screenshot capture failed.");
@@ -122,37 +146,44 @@ function diffScreenState(
 }
 
 // ===========================================
-// Action History Formatting
+// Streaming LLM Consumer
 // ===========================================
 
-function formatActionHistory(
-  actionHistory: ActionDecision[],
-  resultHistory: ActionResult[]
-): string {
-  if (actionHistory.length === 0) return "";
+async function getDecisionStreaming(
+  llm: LLMProvider,
+  messages: ChatMessage[]
+): Promise<ActionDecision> {
+  if (!Config.STREAMING_ENABLED || !llm.capabilities.supportsStreaming || !llm.getDecisionStream) {
+    return llm.getDecision(messages);
+  }
 
-  const lines = actionHistory.map((entry, i) => {
-    const actionType = entry.action ?? "unknown";
-    const reason = entry.reason ?? "N/A";
-    const result = resultHistory[i];
-    const outcome = result ? (result.success ? "OK" : "FAILED") : "";
+  let accumulated = "";
+  process.stdout.write("Thinking");
+  for await (const chunk of llm.getDecisionStream(messages)) {
+    accumulated += chunk;
+    process.stdout.write(".");
+  }
+  process.stdout.write("\n");
 
-    if (actionType === "type") {
-      return `Step ${i + 1}: typed "${entry.text ?? ""}" - ${reason} [${outcome}]`;
-    }
-    if (actionType === "tap") {
-      return `Step ${i + 1}: tapped ${JSON.stringify(entry.coordinates ?? [])} - ${reason} [${outcome}]`;
-    }
-    if (actionType === "launch") {
-      return `Step ${i + 1}: launched ${entry.package ?? entry.uri ?? ""} - ${reason} [${outcome}]`;
-    }
-    if (actionType === "screenshot") {
-      return `Step ${i + 1}: took screenshot - ${reason} [${outcome}]`;
-    }
-    return `Step ${i + 1}: ${actionType} - ${reason} [${outcome}]`;
-  });
+  return parseJsonResponse(accumulated);
+}
 
-  return "\n\nPREVIOUS_ACTIONS:\n" + lines.join("\n");
+/** Simple JSON parser with markdown fallback (duplicated from llm-providers for streaming path) */
+function parseJsonResponse(text: string): ActionDecision {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*?\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        // fall through
+      }
+    }
+    console.log(`Warning: Could not parse streamed response: ${text.slice(0, 200)}`);
+    return { action: "wait", reason: "Failed to parse response, waiting" };
+  }
 }
 
 // ===========================================
@@ -162,15 +193,37 @@ function formatActionHistory(
 async function runAgent(goal: string, maxSteps?: number): Promise<void> {
   const steps = maxSteps ?? Config.MAX_STEPS;
 
+  // Phase 1A: Auto-detect screen resolution
+  const resolution = getScreenResolution();
+  if (resolution) {
+    initDeviceContext(resolution);
+    console.log(`Screen resolution: ${resolution[0]}x${resolution[1]}`);
+  } else {
+    console.log("Screen resolution: using default 1080x2400 swipe coords");
+  }
+
   console.log("Android Action Kernel Started");
   console.log(`Goal: ${goal}`);
   console.log(`Provider: ${Config.LLM_PROVIDER} (${Config.getModel()})`);
   console.log(`Max steps: ${steps} | Step delay: ${Config.STEP_DELAY}s`);
-  console.log(`Vision fallback: ${Config.VISION_ENABLED ? "ON" : "OFF"}`);
+  console.log(`Vision: ${Config.VISION_MODE} | Streaming: ${Config.STREAMING_ENABLED}`);
+  console.log(`Max elements: ${Config.MAX_ELEMENTS} | History: ${Config.MAX_HISTORY_STEPS} steps`);
 
   const llm = getLlmProvider();
-  const actionHistory: ActionDecision[] = [];
-  const resultHistory: ActionResult[] = [];
+
+  // Phase 2B: Session logging
+  const logger = new SessionLogger(
+    Config.LOG_DIR,
+    goal,
+    Config.LLM_PROVIDER,
+    Config.getModel()
+  );
+
+  // Phase 4A: Multi-turn conversation memory
+  const messages: ChatMessage[] = [
+    { role: "system", content: SYSTEM_PROMPT },
+  ];
+
   let prevElements: UIElement[] = [];
   let stuckCount = 0;
 
@@ -179,12 +232,20 @@ async function runAgent(goal: string, maxSteps?: number): Promise<void> {
 
     // 1. Perception: Capture screen state
     console.log("Scanning screen...");
-    const { elements, json: screenContext } = getScreenState();
+    const { elements, compactJson: screenContext } = getScreenState();
+
+    // 1B. Foreground app detection
+    const foregroundApp = getForegroundApp();
+    if (foregroundApp) {
+      console.log(`Foreground: ${foregroundApp}`);
+    }
 
     // 2. Screen diff: detect stuck loops
     let diffContext = "";
+    let screenChanged = true;
     if (step > 0) {
       const diff = diffScreenState(prevElements, elements);
+      screenChanged = diff.changed;
       diffContext = `\n\nSCREEN_CHANGE: ${diff.summary}`;
 
       if (!diff.changed) {
@@ -199,7 +260,8 @@ async function runAgent(goal: string, maxSteps?: number): Promise<void> {
           diffContext +=
             `\nWARNING: You have been stuck for ${stuckCount} steps. ` +
             `The screen is NOT changing. Try a DIFFERENT action: ` +
-            `swipe to scroll, press back, go home, or launch a different app.`;
+            `swipe to scroll, press back, go home, or launch a different app.` +
+            `\nYour plan is not working. Create a NEW plan with a different approach.`;
         }
       } else {
         stuckCount = 0;
@@ -207,39 +269,82 @@ async function runAgent(goal: string, maxSteps?: number): Promise<void> {
     }
     prevElements = elements;
 
-    // 3. Vision fallback: if accessibility tree is empty, use screenshot
+    // 3. Vision: capture screenshot based on VISION_MODE
+    let screenshotBase64: string | null = null;
     let visionContext = "";
-    if (elements.length === 0 && Config.VISION_ENABLED) {
-      console.log("Accessibility tree empty. Attempting vision fallback...");
-      const screenshotPath = captureScreenshot();
-      if (screenshotPath) {
+
+    const shouldCaptureVision =
+      Config.VISION_MODE === "always" ||
+      (Config.VISION_MODE === "fallback" && elements.length === 0);
+
+    if (shouldCaptureVision) {
+      screenshotBase64 = captureScreenshotBase64();
+      if (elements.length === 0) {
         visionContext =
           "\n\nVISION_FALLBACK: The accessibility tree returned NO elements. " +
           "A screenshot has been captured. The screen likely contains custom-drawn " +
           "content (game, WebView, or Flutter). Try using coordinate-based taps on " +
-          "common UI positions, or use 'back'/'home' to navigate away. " +
-          "If you know the app package name, use 'launch' to restart it.";
-        console.log("Vision fallback: screenshot captured for context.");
+          "common UI positions, or use 'back'/'home' to navigate away.";
+      }
+      if (screenshotBase64 && llm.capabilities.supportsImages) {
+        console.log("Sending screenshot to LLM");
       }
     }
 
-    // 4. Reasoning: Get LLM decision
-    console.log("Thinking...");
-    const historyStr = formatActionHistory(actionHistory, resultHistory);
-    const fullContext = screenContext + historyStr + diffContext + visionContext;
+    // 4. Build user message with all context
+    const foregroundLine = foregroundApp
+      ? `FOREGROUND_APP: ${foregroundApp}\n\n`
+      : "";
+    const textContent =
+      `GOAL: ${goal}\n\n${foregroundLine}SCREEN_CONTEXT:\n${screenContext}${diffContext}${visionContext}`;
 
+    // Build content parts (text + optional image)
+    const userContent: ContentPart[] = [{ type: "text", text: textContent }];
+    if (screenshotBase64 && llm.capabilities.supportsImages) {
+      userContent.push({
+        type: "image",
+        base64: screenshotBase64,
+        mimeType: "image/png",
+      });
+    }
+
+    messages.push({ role: "user", content: userContent });
+
+    // Trim messages to keep within history limit
+    const trimmed = trimMessages(messages, Config.MAX_HISTORY_STEPS);
+
+    // 5. Reasoning: Get LLM decision
+    const llmStart = performance.now();
     let decision: ActionDecision;
     try {
-      decision = await llm.getDecision(goal, fullContext, actionHistory);
+      decision = await getDecisionStreaming(llm, trimmed);
     } catch (err) {
       console.log(`LLM Error: ${(err as Error).message}`);
       console.log("Falling back to wait action.");
-      decision = { action: "wait", reason: "LLM request failed, waiting for retry" };
+      decision = { action: "wait", reason: "LLM request failed, waiting" };
     }
+    const llmLatency = performance.now() - llmStart;
 
-    console.log(`Decision: ${decision.action} — ${decision.reason ?? "no reason"}`);
+    // Log thinking and planning
+    if (decision.think) {
+      console.log(`Think: ${decision.think}`);
+    }
+    if (decision.plan) {
+      console.log(`Plan: ${decision.plan.join(" -> ")}`);
+    }
+    if (decision.planProgress) {
+      console.log(`Progress: ${decision.planProgress}`);
+    }
+    console.log(`Decision: ${decision.action} — ${decision.reason ?? "no reason"} (${Math.round(llmLatency)}ms)`);
 
-    // 5. Action: Execute the decision
+    // Append assistant response to conversation
+    messages.push({
+      role: "assistant",
+      content: JSON.stringify(decision),
+    });
+
+    // 6. Action: Execute the decision
+    const actionStart = performance.now();
     let result: ActionResult;
     try {
       result = executeAction(decision);
@@ -247,14 +352,26 @@ async function runAgent(goal: string, maxSteps?: number): Promise<void> {
       console.log(`Action Error: ${(err as Error).message}`);
       result = { success: false, message: (err as Error).message };
     }
+    const actionLatency = performance.now() - actionStart;
 
-    // Track history
-    actionHistory.push(decision);
-    resultHistory.push(result);
+    // Log step
+    logger.logStep(
+      step + 1,
+      foregroundApp,
+      elements.length,
+      screenChanged,
+      decision,
+      result,
+      Math.round(llmLatency),
+      Math.round(actionLatency)
+    );
 
-    // 6. Check for goal completion
+    console.log(`Messages in context: ${trimmed.length}`);
+
+    // 7. Check for goal completion
     if (decision.action === "done") {
       console.log("\nTask completed successfully.");
+      logger.finalize(true);
       return;
     }
 
@@ -263,6 +380,7 @@ async function runAgent(goal: string, maxSteps?: number): Promise<void> {
   }
 
   console.log("\nMax steps reached. Task may be incomplete.");
+  logger.finalize(false);
 }
 
 // ===========================================
