@@ -1,0 +1,19 @@
+{
+  "name": "Daily Fitness Log",
+  "steps": [
+    {
+      "app": "com.google.android.apps.fitness",
+      "goal": "Open Google Fit. Use read_screen to collect today's step count, active minutes, and heart points from the home screen. Copy the stats to clipboard.",
+      "maxSteps": 8
+    },
+    {
+      "app": "com.google.android.apps.fitness",
+      "goal": "Tap the + button to add an activity. Select 'Walking' and log 30 minutes of walking. Save the activity.",
+      "maxSteps": 12,
+      "formData": {
+        "Activity": "Walking",
+        "Duration": "30 minutes"
+      }
+    }
+  ]
+}

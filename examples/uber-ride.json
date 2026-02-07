@@ -1,0 +1,10 @@
+{
+  "name": "Uber Ride Price Check",
+  "steps": [
+    {
+      "app": "com.ubercab",
+      "goal": "Tap the 'Where to?' search bar. Type 'Airport' and select the first airport result. Wait for ride options to load. Use read_screen to collect all ride types (UberGo, Premier, XL, etc.) with their estimated prices and ETAs. Copy the comparison to clipboard. Do NOT book the ride.",
+      "maxSteps": 15
+    }
+  ]
+}

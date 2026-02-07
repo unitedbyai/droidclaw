@@ -1,0 +1,13 @@
+{
+  "name": "Slack Daily Standup",
+  "steps": [
+    {
+      "app": "com.Slack",
+      "goal": "Open the #standup channel by tapping the search icon, typing 'standup', and selecting the channel. Then type the standup message and send it using submit_message.",
+      "maxSteps": 15,
+      "formData": {
+        "Message": "**Daily Standup**\nYesterday: Finished API integration\nToday: Writing tests + code review\nBlockers: None"
+      }
+    }
+  ]
+}

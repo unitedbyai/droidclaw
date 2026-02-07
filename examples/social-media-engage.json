@@ -1,0 +1,15 @@
+{
+  "name": "Social Media Engagement Round",
+  "steps": [
+    {
+      "app": "com.twitter.android",
+      "goal": "Open the home feed. Scroll through the first 5 posts. For each post, tap the like/heart button. If any post is from someone I follow and is interesting (tech, AI, startup related), also leave a short supportive reply using submit_message.",
+      "maxSteps": 30
+    },
+    {
+      "app": "com.linkedin.android",
+      "goal": "Open the home feed. Scroll through the first 5 posts. For each post, tap the Like button. If any post is from a connection and about tech/AI/startups, tap Comment and leave a short thoughtful comment using submit_message.",
+      "maxSteps": 30
+    }
+  ]
+}

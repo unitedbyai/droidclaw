@@ -1,0 +1,20 @@
+{
+  "name": "WhatsApp Broadcast Message",
+  "steps": [
+    {
+      "app": "com.whatsapp",
+      "goal": "Search for the contact 'Mom' using the search bar at the top. Open the chat. Type 'Good morning! Hope you have a great day' and send it using submit_message.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.whatsapp",
+      "goal": "Go back to the main chat list. Search for the contact 'Dad' using the search bar. Open the chat. Type 'Good morning! Hope you have a great day' and send it using submit_message.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.whatsapp",
+      "goal": "Go back to the main chat list. Search for the contact 'Sister' using the search bar. Open the chat. Type 'Good morning! Hope you have a great day' and send it using submit_message.",
+      "maxSteps": 12
+    }
+  ]
+}

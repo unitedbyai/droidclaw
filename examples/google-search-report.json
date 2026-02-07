@@ -1,0 +1,10 @@
+{
+  "name": "Google Search & Report",
+  "steps": [
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Tap the search bar, type 'best budget phones 2025', and press enter. Wait for results to load. Use read_screen to collect the top 10 search results (titles and snippets). Copy everything to clipboard.",
+      "maxSteps": 15
+    }
+  ]
+}

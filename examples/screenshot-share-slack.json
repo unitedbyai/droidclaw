@@ -1,0 +1,14 @@
+{
+  "name": "Screenshot Current Screen & Share to Slack",
+  "steps": [
+    {
+      "goal": "Take a screenshot of the current screen using the keyevent action with code 120 (KEYCODE_SYSRQ for screenshot). Wait 2 seconds for the screenshot to save.",
+      "maxSteps": 5
+    },
+    {
+      "app": "com.Slack",
+      "goal": "Search for the #bugs channel using the search icon. Open it. Tap the + or attachment icon to attach a file. Navigate to the Screenshots folder and select the most recent screenshot. Add the caption 'Bug found on this screen - see screenshot' and send it using submit_message.",
+      "maxSteps": 20
+    }
+  ]
+}

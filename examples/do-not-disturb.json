@@ -1,0 +1,19 @@
+{
+  "name": "Focus Mode - DND + Slack Status",
+  "steps": [
+    {
+      "goal": "Open sound settings using open_settings with setting 'sound'. Find and enable 'Do Not Disturb' mode. Set it to allow priority contacts only if the option is available.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.Slack",
+      "goal": "Tap on your profile picture or the 'You' tab at the bottom. Tap on 'Set a status'. Set the emoji to the focus/headphones emoji and type 'In deep focus mode - back in 2 hours'. Tap Save or Done.",
+      "maxSteps": 15
+    },
+    {
+      "app": "com.spotify.music",
+      "goal": "Search for 'lofi beats' and play the first playlist. Tap the shuffle or play button.",
+      "maxSteps": 10
+    }
+  ]
+}

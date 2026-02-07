@@ -1,0 +1,15 @@
+{
+  "name": "Check Flight Status",
+  "steps": [
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Search for 'flight status AI 302' (replace with actual flight number). Wait for the Google flight card to appear. Use read_screen to collect the flight status, departure/arrival times, gate info, and any delays. Copy to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.whatsapp",
+      "goal": "Search for 'Family Group' in the search bar. Open it. Type a message with the flight status: 'Flight update: [paste clipboard info]. Will keep you posted!' and send using submit_message.",
+      "maxSteps": 12
+    }
+  ]
+}

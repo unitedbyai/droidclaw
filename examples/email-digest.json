@@ -1,0 +1,10 @@
+{
+  "name": "Email Inbox Digest",
+  "steps": [
+    {
+      "app": "com.google.android.gm",
+      "goal": "Open the Primary inbox. Use read_screen to collect the subject lines and senders of the top 10 most recent emails. Note which ones are unread (bold text). Copy the digest to clipboard.",
+      "maxSteps": 12
+    }
+  ]
+}

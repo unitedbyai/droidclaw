@@ -1,0 +1,21 @@
+{
+  "name": "Cross-Platform Social Media Post",
+  "steps": [
+    {
+      "app": "com.twitter.android",
+      "goal": "Tap the compose/new tweet button (usually a + or feather icon). Type the post text and tap the 'Post' button to publish it.",
+      "maxSteps": 12,
+      "formData": {
+        "Post": "Just shipped a new feature! Building an AI agent that controls Android devices via ADB. The future of mobile automation is here. #AI #Android #Automation"
+      }
+    },
+    {
+      "app": "com.linkedin.android",
+      "goal": "Tap the post/create button (+ icon at bottom). Type the post text in the text area and tap 'Post' to publish.",
+      "maxSteps": 12,
+      "formData": {
+        "Post": "Excited to share: we just shipped a new feature for our AI-powered Android automation agent. It can now orchestrate multi-app workflows - think cross-app data transfer, automated testing, and more.\n\nThe tech: perception-reasoning-action loop using accessibility APIs + LLM decision making.\n\n#AI #AndroidDev #Automation #BuildInPublic"
+      }
+    }
+  ]
+}

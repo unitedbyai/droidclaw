@@ -1,0 +1,14 @@
+{
+  "name": "GitHub Check Open PRs",
+  "steps": [
+    {
+      "goal": "Open the URL https://github.com/notifications in the browser using open_url action. Wait for the page to load. Use read_screen to collect all notification titles and their repositories. Copy the summary to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.github.android",
+      "goal": "Open the GitHub app. Go to the Pull Requests section (it may be under the Notifications or Home tab). Use read_screen to collect all open PRs assigned to me or requesting my review. Copy the list to clipboard.",
+      "maxSteps": 15
+    }
+  ]
+}

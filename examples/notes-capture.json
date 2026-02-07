@@ -1,0 +1,14 @@
+{
+  "name": "Quick Notes Capture",
+  "steps": [
+    {
+      "app": "com.google.android.keep",
+      "goal": "Tap the + button to create a new note. Enter the title and body text, then tap the back arrow to save.",
+      "maxSteps": 10,
+      "formData": {
+        "Title": "Meeting Notes - Sprint Review",
+        "Body": "Action items:\n- Deploy v2.1 by Friday\n- Fix login bug (P1)\n- Schedule design review with UX team\n- Update API docs for new endpoints"
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "Research Topic Across Apps",
+  "steps": [
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Search for 'Bun vs Deno vs Node.js 2025 comparison'. Use read_screen to collect the top 5 results with their key points. Copy to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.google.android.youtube",
+      "goal": "Search for 'Bun vs Deno vs Node comparison 2025'. Use read_screen to find the top 3 most viewed videos on this topic. Note the titles, channels, view counts, and upload dates. Copy to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.reddit.frontpage",
+      "goal": "Search for 'Bun vs Deno vs Node' in the search bar. Open the top result from r/programming or r/node. Use read_screen to collect the top comments and opinions. Copy to clipboard.",
+      "maxSteps": 15
+    },
+    {
+      "app": "org.telegram.messenger",
+      "goal": "Search for 'Saved Messages' and open it. Type a summary note: 'Research: Bun vs Deno vs Node - check clipboard for details from Google, YouTube, and Reddit'. Send it using submit_message.",
+      "maxSteps": 10
+    }
+  ]
+}

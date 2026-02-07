@@ -1,0 +1,17 @@
+{
+  "name": "Create Calendar Event",
+  "steps": [
+    {
+      "app": "com.google.android.calendar",
+      "goal": "Tap the + (create) button to make a new event. Fill in the event details and save it.",
+      "maxSteps": 15,
+      "formData": {
+        "Title": "Team Sync",
+        "Date": "Tomorrow",
+        "Time": "2:00 PM - 2:30 PM",
+        "Location": "Google Meet",
+        "Description": "Weekly team sync - discuss sprint progress and blockers"
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "Spotify - Start Focus Playlist",
+  "steps": [
+    {
+      "app": "com.spotify.music",
+      "goal": "Tap the Search icon at the bottom. Type 'Deep Focus' in the search bar. Open the 'Deep Focus' playlist (the official Spotify one). Tap the Shuffle Play or Play button to start playing.",
+      "maxSteps": 12
+    }
+  ]
+}

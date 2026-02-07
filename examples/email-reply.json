@@ -1,0 +1,10 @@
+{
+  "name": "Email Quick Reply",
+  "steps": [
+    {
+      "app": "com.google.android.gm",
+      "goal": "Open the most recent unread email in the Primary inbox. Use read_screen to read the full email content. Then tap the Reply button, type a professional response acknowledging the email and addressing their main point, and tap Send.",
+      "maxSteps": 18
+    }
+  ]
+}

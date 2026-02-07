@@ -1,0 +1,15 @@
+{
+  "name": "Log Daily Expenses",
+  "steps": [
+    {
+      "app": "com.google.android.apps.messaging",
+      "goal": "Use read_screen to find recent SMS messages from banks or UPI apps (messages containing 'debited', 'spent', 'paid', or transaction amounts). Collect the last 5 transaction messages. Copy them to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.google.android.keep",
+      "goal": "Tap + to create a new note. Title it 'Expenses - Today'. In the body, paste the transaction details from clipboard. Save by tapping back.",
+      "maxSteps": 10
+    }
+  ]
+}

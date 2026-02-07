@@ -1,0 +1,10 @@
+{
+  "name": "Quick Food Order",
+  "steps": [
+    {
+      "app": "com.application.zomato",
+      "goal": "Search for 'biryani' in the search bar. Browse the top 3 restaurants. Pick the one with the highest rating (4.0+). Open it, find 'Chicken Biryani' or similar, tap Add to cart. Then go to cart and review the order. Copy the order summary (items, total, delivery time) to clipboard. Do NOT place the order - just get to the checkout screen.",
+      "maxSteps": 25
+    }
+  ]
+}

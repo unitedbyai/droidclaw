@@ -1,0 +1,10 @@
+{
+  "name": "WhatsApp Quick Reply",
+  "steps": [
+    {
+      "app": "com.whatsapp",
+      "goal": "Open the most recent unread chat (bold name indicates unread). Read the last few messages using read_screen to understand context. Then type a short, friendly reply acknowledging their message and send it using submit_message.",
+      "maxSteps": 15
+    }
+  ]
+}

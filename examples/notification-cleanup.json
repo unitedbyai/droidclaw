@@ -1,0 +1,13 @@
+{
+  "name": "Notification Triage & Cleanup",
+  "steps": [
+    {
+      "goal": "Pull down the notification bar using a swipe from top to bottom. Use read_screen to collect all visible notifications. Copy the notification summary to clipboard.",
+      "maxSteps": 8
+    },
+    {
+      "goal": "Look at the notifications. Swipe away (left or right) any promotional or non-important notifications (shopping deals, game notifications, news alerts). Keep important ones (messages, calendar, work apps).",
+      "maxSteps": 20
+    }
+  ]
+}

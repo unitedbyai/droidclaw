@@ -1,0 +1,30 @@
+{
+  "name": "Morning Briefing",
+  "steps": [
+    {
+      "app": "com.google.android.apps.messaging",
+      "goal": "Read all unread SMS messages. Use read_screen to collect all visible messages and copy them to clipboard.",
+      "maxSteps": 10
+    },
+    {
+      "app": "com.whatsapp",
+      "goal": "Check the top 5 most recent chats. For each unread chat (bold name = unread), open it, use read_screen to collect messages, then go back. Copy a summary of all unread messages to clipboard.",
+      "maxSteps": 25
+    },
+    {
+      "app": "org.telegram.messenger",
+      "goal": "Check the top 5 most recent chats with unread badges. Open each, use read_screen to collect messages, go back. Copy a summary to clipboard.",
+      "maxSteps": 25
+    },
+    {
+      "app": "com.google.android.calendar",
+      "goal": "Read today's calendar events. Use read_screen to collect all events visible on today's view. Copy the schedule to clipboard.",
+      "maxSteps": 10
+    },
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Search for 'weather today' and read the result. Copy the weather summary (temperature, conditions, high/low) to clipboard.",
+      "maxSteps": 10
+    }
+  ]
+}

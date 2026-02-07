@@ -1,0 +1,15 @@
+{
+  "name": "Instagram Engagement Check",
+  "steps": [
+    {
+      "app": "com.instagram.android",
+      "goal": "Tap the profile icon (bottom right) to go to my profile. Tap on the most recent post (first image in the grid). Use read_screen to collect the number of likes, comments, and the first few comments. Copy the engagement stats to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.instagram.android",
+      "goal": "Check the notifications tab (heart icon at bottom). Use read_screen to collect recent notifications - new followers, likes, comments. Copy a summary to clipboard.",
+      "maxSteps": 10
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Forward WhatsApp Info to Email",
+  "steps": [
+    {
+      "app": "com.whatsapp",
+      "goal": "Search for the group 'Work Updates' using the search bar. Open it. Use read_screen to collect the last 10 messages. Copy all the text to clipboard using clipboard_set.",
+      "maxSteps": 15
+    },
+    {
+      "goal": "Use compose_email to send an email. Set the query (email address) to 'myself@gmail.com'. Set the text to 'WhatsApp Work Updates Summary - forwarded from group chat' followed by the clipboard contents. The compose_email action will open the email app with the To field pre-filled.",
+      "maxSteps": 15
+    }
+  ]
+}

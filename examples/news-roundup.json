@@ -1,0 +1,20 @@
+{
+  "name": "Tech News Roundup",
+  "steps": [
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Search for 'top tech news today'. Use read_screen to collect the top 5 headlines with brief descriptions from the search results. Copy to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Search for 'AI news this week'. Use read_screen to collect the top 5 headlines about AI developments. Copy to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Search for 'startup funding news today'. Use read_screen to collect the top 5 results about recent startup fundings. Copy to clipboard.",
+      "maxSteps": 12
+    }
+  ]
+}

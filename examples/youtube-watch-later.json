@@ -1,0 +1,15 @@
+{
+  "name": "YouTube Save to Watch Later",
+  "steps": [
+    {
+      "app": "com.google.android.youtube",
+      "goal": "Search for 'Andrej Karpathy latest' in the search bar. From the results, find the most recent video (check upload dates). Long press on the video thumbnail and tap 'Save to Watch Later' or tap the three-dot menu on the first result and select 'Save to Watch later'.",
+      "maxSteps": 15
+    },
+    {
+      "app": "com.google.android.youtube",
+      "goal": "Go back to search results. Search for 'Lex Fridman latest podcast'. Find the most recent upload and save it to Watch Later using the three-dot menu.",
+      "maxSteps": 15
+    }
+  ]
+}

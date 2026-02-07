@@ -1,0 +1,10 @@
+{
+  "name": "Telegram Send Message",
+  "steps": [
+    {
+      "app": "org.telegram.messenger",
+      "goal": "Search for 'Saved Messages' in the search bar and open it. Type 'Reminder: Review PR #42 before EOD' and send it using submit_message. This is my personal notes chat.",
+      "maxSteps": 12
+    }
+  ]
+}

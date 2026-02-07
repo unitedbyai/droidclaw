@@ -1,0 +1,15 @@
+{
+  "name": "Telegram Channel Digest",
+  "steps": [
+    {
+      "app": "org.telegram.messenger",
+      "goal": "Open the search icon, search for 'TechCrunch' channel, and open it. Use read_screen to collect the latest 10 posts. Copy the headlines and summaries to clipboard.",
+      "maxSteps": 15
+    },
+    {
+      "app": "org.telegram.messenger",
+      "goal": "Go back to main chat list. Search for 'Product Hunt' channel and open it. Use read_screen to collect the latest 10 posts. Copy the product names and descriptions to clipboard.",
+      "maxSteps": 15
+    }
+  ]
+}

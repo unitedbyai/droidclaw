@@ -1,0 +1,10 @@
+{
+  "name": "Check Commute Time",
+  "steps": [
+    {
+      "app": "com.google.android.apps.maps",
+      "goal": "Tap the search bar. Type 'Work' or the office address. Tap Directions. Make sure starting point is 'Your location' (current location). Check the driving, transit, and walking times. Use read_screen to collect all route options with ETAs and traffic conditions. Copy the commute summary to clipboard. Do NOT start navigation.",
+      "maxSteps": 15
+    }
+  ]
+}

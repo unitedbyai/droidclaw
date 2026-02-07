@@ -1,0 +1,15 @@
+{
+  "name": "Slack Check Unread Messages",
+  "steps": [
+    {
+      "app": "com.Slack",
+      "goal": "Tap on the 'Activity' or bell icon to see recent mentions and notifications. Use read_screen to collect all recent activity. Copy the summary to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.Slack",
+      "goal": "Go back to the main view. Look for channels or DMs with unread indicators (bold text or badges). Open the top 3 unread channels/DMs, use read_screen to collect recent messages in each, then go back. Copy a summary to clipboard.",
+      "maxSteps": 25
+    }
+  ]
+}

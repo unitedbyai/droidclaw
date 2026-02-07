@@ -1,0 +1,20 @@
+{
+  "name": "Translate & Reply on WhatsApp",
+  "steps": [
+    {
+      "app": "com.whatsapp",
+      "goal": "Open the most recent unread chat. Use read_screen to collect the last few messages. Copy the text to clipboard.",
+      "maxSteps": 12
+    },
+    {
+      "app": "com.google.android.apps.translate",
+      "goal": "Tap the text input area. Paste from clipboard. Set the source language to 'Detect language' and target language to 'English'. Wait for translation. Use read_screen to collect the translated text. Copy the translation to clipboard.",
+      "maxSteps": 15
+    },
+    {
+      "app": "com.whatsapp",
+      "goal": "Open the same chat that had unread messages (it should be the most recent). Type a reply in English and send it using submit_message. The reply should acknowledge what they said based on the translation you just read.",
+      "maxSteps": 12
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "Price Comparison Shopping",
+  "steps": [
+    {
+      "app": "com.amazon.mShop.android.shopping",
+      "goal": "Search for 'Sony WH-1000XM5 headphones'. Find the first result and note the price. Use read_screen to collect the product name, price, rating, and delivery info. Copy to clipboard.",
+      "maxSteps": 15
+    },
+    {
+      "app": "com.flipkart.android",
+      "goal": "Search for 'Sony WH-1000XM5 headphones'. Find the first result and note the price. Use read_screen to collect the product name, price, rating, and delivery info. Copy to clipboard.",
+      "maxSteps": 15
+    },
+    {
+      "app": "com.google.android.googlequicksearchbox",
+      "goal": "Search for 'Sony WH-1000XM5 price comparison India'. Use read_screen to collect the top search results showing prices from various retailers. Copy to clipboard.",
+      "maxSteps": 12
+    }
+  ]
+}
