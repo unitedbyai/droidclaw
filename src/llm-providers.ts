@@ -26,7 +26,7 @@ import {
 import { sanitizeCoordinates, type ActionDecision } from "./actions.js";
 
 // ===========================================
-// System Prompt — all 15 actions + planning
+// System Prompt — all 22 actions + planning
 // ===========================================
 
 export const SYSTEM_PROMPT = `You are an Android Driver Agent. Your job is to achieve the user's goal by navigating the Android UI.
@@ -58,7 +58,7 @@ Example:
 {"think": "I see the Settings app is open. I need to scroll down to find Display settings.", "plan": ["Open Settings", "Navigate to Display", "Change theme to dark", "Verify change"], "planProgress": "Step 2: navigating to Display", "action": "swipe", "direction": "up", "reason": "Scroll down to find Display option"}
 
 ═══════════════════════════════════════════
-AVAILABLE ACTIONS (15 total)
+AVAILABLE ACTIONS (22 total)
 ═══════════════════════════════════════════
 
 Navigation (coordinates MUST be a JSON array of TWO separate integers [x, y] — never concatenate them):
@@ -77,11 +77,20 @@ App Control:
   {"action": "launch", "package": "com.whatsapp", "reason": "Open WhatsApp"}
   {"action": "launch", "uri": "https://maps.google.com/?q=pizza", "reason": "Open URL"}
   {"action": "launch", "package": "com.whatsapp", "uri": "content://media/external/images/1", "extras": {"android.intent.extra.TEXT": "Check this"}, "reason": "Share image to WhatsApp"}
+  {"action": "open_url", "url": "https://example.com", "reason": "Open URL in browser"}
+  {"action": "switch_app", "package": "com.whatsapp", "reason": "Switch to WhatsApp"}
+  {"action": "open_settings", "setting": "wifi|bluetooth|display|sound|battery|location|apps|date|accessibility|developer", "reason": "Open settings screen"}
 
 Data:
   {"action": "clipboard_get", "reason": "Read clipboard contents"}
   {"action": "clipboard_set", "text": "copied text", "reason": "Set clipboard"}
   {"action": "paste", "coordinates": [540, 804], "reason": "Paste clipboard into focused field"}
+
+Device & Files:
+  {"action": "notifications", "reason": "Read notification bar content"}
+  {"action": "pull_file", "path": "/sdcard/Download/file.pdf", "reason": "Pull file from device"}
+  {"action": "push_file", "source": "./file.pdf", "dest": "/sdcard/Download/file.pdf", "reason": "Push file to device"}
+  {"action": "keyevent", "code": 187, "reason": "Send keycode (187=recent apps, 26=power, etc.)"}
 
 System:
   {"action": "shell", "command": "am force-stop com.app.broken", "reason": "Kill crashed app"}
@@ -127,7 +136,7 @@ CRITICAL RULES
 7. READ PAGES: Use "read_screen" to collect all text from a page (search results, articles, feeds). It scrolls automatically and copies everything to clipboard.
 8. LONG PRESS: Use "longpress" when you see "longClickable": true (context menus, copy/paste, etc).
 9. SCROLLING: If the item you need isn't visible, use "scroll" with direction "down" to see more below, or "up" for above.
-10. MULTI-APP: To switch apps, use "home" then "launch" the next app. Or use "back" to return.
+10. MULTI-APP: Use "switch_app" with the package name to switch directly between apps. Or use "home" then "launch". Use "back" to return within the same app.
 11. PASSWORDS: Never log or output the text of password fields.
 12. DONE: Say "done" as soon as the goal is achieved. Don't keep acting after success.
 13. SUBMIT IN CHAT APPS: Use "submit_message" action instead of "enter" in chat apps. It finds and taps the Send button, waits for a response, and reports new content. Only use "enter" in search bars or web forms.
@@ -331,7 +340,7 @@ const actionDecisionSchema = z.object({
   think: z.string().optional().describe("Your reasoning about the current screen state and what to do next"),
   plan: z.array(z.string()).optional().describe("3-5 high-level steps to achieve the goal"),
   planProgress: z.string().optional().describe("Which plan step you are currently on"),
-  action: z.string().describe("The action to take: tap, type, scroll, enter, back, home, wait, done, longpress, launch, clear, clipboard_get, clipboard_set, paste, shell, read_screen, submit_message, copy_visible_text, wait_for_content, find_and_tap, compose_email"),
+  action: z.string().describe("The action to take: tap, type, scroll, enter, back, home, wait, done, longpress, launch, clear, clipboard_get, clipboard_set, paste, shell, open_url, switch_app, notifications, pull_file, push_file, keyevent, open_settings, read_screen, submit_message, copy_visible_text, wait_for_content, find_and_tap, compose_email"),
   coordinates: z.tuple([z.number(), z.number()]).optional().describe("Target field as [x, y] — used by tap, longpress, type, and paste"),
   text: z.string().optional().describe("Text to type, clipboard text, or email body for compose_email"),
   direction: z.string().optional().describe("Scroll direction: up, down, left, right"),
@@ -343,6 +352,12 @@ const actionDecisionSchema = z.object({
   command: z.string().optional().describe("Shell command to run"),
   filename: z.string().optional().describe("Screenshot filename"),
   query: z.string().optional().describe("Email address for compose_email (REQUIRED), search term for find_and_tap (REQUIRED), or filter for copy_visible_text"),
+  url: z.string().optional().describe("URL to open for open_url action"),
+  path: z.string().optional().describe("Device file path for pull_file action"),
+  source: z.string().optional().describe("Local file path for push_file action"),
+  dest: z.string().optional().describe("Device destination path for push_file action"),
+  code: z.number().optional().describe("Android keycode number for keyevent action"),
+  setting: z.string().optional().describe("Setting name for open_settings: wifi, bluetooth, display, sound, battery, location, apps, date, accessibility, developer"),
 });
 
 class OpenRouterProvider implements LLMProvider {
@@ -589,11 +604,11 @@ class BedrockProvider implements LLMProvider {
  * Sanitizes raw LLM text so it can be parsed as JSON.
  * LLMs often put literal newlines inside JSON string values which breaks JSON.parse().
  */
-function sanitizeJsonText(raw: string): string {
+export function sanitizeJsonText(raw: string): string {
   return raw.replace(/\n/g, " ").replace(/\r/g, " ");
 }
 
-function parseJsonResponse(text: string): ActionDecision {
+export function parseJsonResponse(text: string): ActionDecision {
   let decision: ActionDecision | null = null;
   try {
     decision = JSON.parse(text);

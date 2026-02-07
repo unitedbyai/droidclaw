@@ -2,10 +2,11 @@
  * Action execution module for DroidClaw.
  * Handles all ADB commands for interacting with Android devices.
  *
- * Supported actions (21):
+ * Supported actions (28):
  *   tap, type, enter, swipe, home, back, wait, done,
  *   longpress, screenshot, launch, clear, clipboard_get, clipboard_set, paste, shell,
- *   submit_message, copy_visible_text, wait_for_content, find_and_tap, compose_email
+ *   submit_message, copy_visible_text, wait_for_content, find_and_tap, compose_email,
+ *   open_url, switch_app, notifications, pull_file, push_file, keyevent, open_settings
  */
 
 import { Config } from "./config.js";
@@ -47,6 +48,17 @@ export interface ActionDecision {
   // multi-step action fields (Phase 6)
   skill?: string; // legacy: kept for backward compat, prefer action field directly
   query?: string; // email address for compose_email, search term for find_and_tap/copy_visible_text
+  // open_url action
+  url?: string;
+  // pull_file action
+  path?: string;
+  // push_file action
+  source?: string;
+  dest?: string;
+  // keyevent action
+  code?: number;
+  // open_settings action
+  setting?: string;
 }
 
 export interface ActionResult {
@@ -186,6 +198,20 @@ export function executeAction(action: ActionDecision): ActionResult {
       return executeShell(action);
     case "scroll":
       return executeScroll(action);
+    case "open_url":
+      return executeOpenUrl(action);
+    case "switch_app":
+      return executeSwitchApp(action);
+    case "notifications":
+      return executeNotifications();
+    case "pull_file":
+      return executePullFile(action);
+    case "push_file":
+      return executePushFile(action);
+    case "keyevent":
+      return executeKeyevent(action);
+    case "open_settings":
+      return executeOpenSettings(action);
     default:
       console.log(`Warning: Unknown action: ${action.action}`);
       return { success: false, message: `Unknown action: ${action.action}` };
@@ -301,17 +327,26 @@ function executeType(action: ActionDecision): ActionResult {
     }
   }
 
-  // ADB requires %s for spaces, escape special shell characters
+  // ADB requires %s for spaces, escape special shell characters.
+  // Backslash must be escaped first to avoid double-escaping.
   const escapedText = text
     .replaceAll("\\", "\\\\")
     .replaceAll("\"", "\\\"")
     .replaceAll("'", "\\'")
+    .replaceAll("`", "\\`")
+    .replaceAll("$", "\\$")
+    .replaceAll("!", "\\!")
+    .replaceAll("?", "\\?")
     .replaceAll(" ", "%s")
     .replaceAll("&", "\\&")
     .replaceAll("|", "\\|")
     .replaceAll(";", "\\;")
     .replaceAll("(", "\\(")
     .replaceAll(")", "\\)")
+    .replaceAll("[", "\\[")
+    .replaceAll("]", "\\]")
+    .replaceAll("{", "\\{")
+    .replaceAll("}", "\\}")
     .replaceAll("<", "\\<")
     .replaceAll(">", "\\>");
   console.log(`Typing: ${text}`);
@@ -483,7 +518,10 @@ function executeClipboardSet(action: ActionDecision): ActionResult {
   const text = action.text ?? "";
   if (!text) return { success: false, message: "No text to set on clipboard" };
   console.log(`Setting clipboard: ${text.slice(0, 50)}...`);
-  runAdbCommand(["shell", "cmd", "clipboard", "set-text", text]);
+  // Safe shell escaping: wrap in single quotes, escape internal ' as '\''
+  // This matches safeClipboardSet() in skills.ts
+  const escaped = text.replaceAll("'", "'\\''");
+  runAdbCommand(["shell", `cmd clipboard set-text '${escaped}'`]);
   return { success: true, message: `Clipboard set to "${text.slice(0, 50)}"` };
 }
 
@@ -531,6 +569,128 @@ function executeScroll(action: ActionDecision): ActionResult {
     SWIPE_DURATION_MS,
   ]);
   return { success: true, message: `Scrolled ${direction}` };
+}
+
+// ===========================================
+// Phase 7: New actions
+// ===========================================
+
+/**
+ * Opens a URL in the default browser.
+ */
+function executeOpenUrl(action: ActionDecision): ActionResult {
+  const url = action.url ?? "";
+  if (!url) return { success: false, message: "No URL provided" };
+  console.log(`Opening URL: ${url}`);
+  const result = runAdbCommand(["shell", "am", "start", "-a", "android.intent.action.VIEW", "-d", url]);
+  return { success: true, message: `Opened URL: ${url}`, data: result };
+}
+
+/**
+ * Switches to a specific app by package name.
+ */
+function executeSwitchApp(action: ActionDecision): ActionResult {
+  const pkg = action.package ?? "";
+  if (!pkg) return { success: false, message: "No package name provided" };
+  console.log(`Switching to app: ${pkg}`);
+  const result = runAdbCommand([
+    "shell", "monkey", "-p", pkg, "-c", "android.intent.category.LAUNCHER", "1",
+  ]);
+  return { success: true, message: `Switched to ${pkg}`, data: result };
+}
+
+/**
+ * Reads notification bar content. Parses title/text from active notifications.
+ */
+function executeNotifications(): ActionResult {
+  console.log("Reading notifications");
+  const raw = runAdbCommand(["shell", "dumpsys", "notification", "--noredact"]);
+  // Parse title and text from NotificationRecord sections
+  const notifications: string[] = [];
+  let currentTitle = "";
+  for (const line of raw.split("\n")) {
+    const titleMatch = line.match(/android\.title=(?:String\s*\()?(.*?)(?:\)|$)/);
+    const textMatch = line.match(/android\.text=(?:String\s*\()?(.*?)(?:\)|$)/);
+    if (titleMatch) currentTitle = titleMatch[1].trim();
+    if (textMatch && currentTitle) {
+      notifications.push(`${currentTitle}: ${textMatch[1].trim()}`);
+      currentTitle = "";
+    }
+  }
+  const summary = notifications.length > 0
+    ? notifications.join("\n")
+    : "No notifications found";
+  console.log(`Found ${notifications.length} notifications`);
+  return { success: true, message: `Notifications:\n${summary}`, data: summary };
+}
+
+/**
+ * Pulls a file from device to local machine.
+ */
+function executePullFile(action: ActionDecision): ActionResult {
+  const devicePath = action.path ?? "";
+  if (!devicePath) return { success: false, message: "No device path provided" };
+  // Ensure pulled_files directory exists
+  const { existsSync, mkdirSync } = require("node:fs");
+  if (!existsSync("./pulled_files")) {
+    mkdirSync("./pulled_files", { recursive: true });
+  }
+  const filename = devicePath.split("/").pop() ?? "file";
+  const localPath = `./pulled_files/${filename}`;
+  console.log(`Pulling file: ${devicePath} → ${localPath}`);
+  const result = runAdbCommand(["pull", devicePath, localPath]);
+  return { success: true, message: `Pulled ${devicePath} → ${localPath}`, data: result };
+}
+
+/**
+ * Pushes a file from local machine to device.
+ */
+function executePushFile(action: ActionDecision): ActionResult {
+  const source = action.source ?? "";
+  const dest = action.dest ?? "";
+  if (!source || !dest) return { success: false, message: "Missing source or dest path" };
+  console.log(`Pushing file: ${source} → ${dest}`);
+  const result = runAdbCommand(["push", source, dest]);
+  return { success: true, message: `Pushed ${source} → ${dest}`, data: result };
+}
+
+/**
+ * Sends any Android keycode. Escape hatch for keys not covered by other actions.
+ */
+function executeKeyevent(action: ActionDecision): ActionResult {
+  const code = action.code;
+  if (code == null) return { success: false, message: "No keycode provided" };
+  console.log(`Sending keyevent: ${code}`);
+  runAdbCommand(["shell", "input", "keyevent", String(code)]);
+  return { success: true, message: `Sent keyevent ${code}` };
+}
+
+/**
+ * Opens specific Android settings screens.
+ */
+const SETTINGS_MAP: Record<string, string> = {
+  wifi: "android.settings.WIFI_SETTINGS",
+  bluetooth: "android.settings.BLUETOOTH_SETTINGS",
+  display: "android.settings.DISPLAY_SETTINGS",
+  sound: "android.settings.SOUND_SETTINGS",
+  battery: "android.settings.BATTERY_SAVER_SETTINGS",
+  location: "android.settings.LOCATION_SOURCE_SETTINGS",
+  apps: "android.settings.APPLICATION_SETTINGS",
+  date: "android.settings.DATE_SETTINGS",
+  accessibility: "android.settings.ACCESSIBILITY_SETTINGS",
+  developer: "android.settings.APPLICATION_DEVELOPMENT_SETTINGS",
+};
+
+function executeOpenSettings(action: ActionDecision): ActionResult {
+  const setting = action.setting ?? "";
+  const intentAction = SETTINGS_MAP[setting];
+  if (!intentAction) {
+    const valid = Object.keys(SETTINGS_MAP).join(", ");
+    return { success: false, message: `Unknown setting "${setting}". Valid: ${valid}` };
+  }
+  console.log(`Opening settings: ${setting}`);
+  const result = runAdbCommand(["shell", "am", "start", "-a", intentAction]);
+  return { success: true, message: `Opened ${setting} settings`, data: result };
 }
 
 /**

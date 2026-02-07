@@ -40,6 +40,7 @@ import { executeSkill } from "./skills.js";
 import {
   getLlmProvider,
   trimMessages,
+  parseJsonResponse,
   SYSTEM_PROMPT,
   type LLMProvider,
   type ChatMessage,
@@ -170,54 +171,11 @@ async function getDecisionStreaming(
   return parseJsonResponse(accumulated);
 }
 
-/**
- * Sanitizes raw LLM text so it can be parsed as JSON.
- * LLMs often put literal newlines inside JSON string values which breaks JSON.parse().
- * This replaces unescaped newlines inside strings with spaces.
- */
-function sanitizeJsonText(raw: string): string {
-  // Replace literal newlines/carriage returns with spaces — valid JSON
-  // doesn't require newlines, and LLMs often embed them in string values.
-  return raw.replace(/\n/g, " ").replace(/\r/g, " ");
-}
-
-/** JSON parser with newline sanitization and markdown fallback (for streaming path) */
-function parseJsonResponse(text: string): ActionDecision {
-  let decision: ActionDecision | null = null;
-
-  // First try raw text
-  try {
-    decision = JSON.parse(text);
-  } catch {
-    // Try after sanitizing newlines
-    try {
-      decision = JSON.parse(sanitizeJsonText(text));
-    } catch {
-      // Try extracting JSON block from markdown or surrounding text
-      const match = text.match(/\{[\s\S]*\}/);
-      if (match) {
-        try {
-          decision = JSON.parse(sanitizeJsonText(match[0]));
-        } catch {
-          // fall through
-        }
-      }
-    }
-  }
-
-  if (!decision) {
-    console.log(`Warning: Could not parse streamed response: ${text.slice(0, 200)}`);
-    return { action: "wait", reason: "Failed to parse response, waiting" };
-  }
-  decision.coordinates = sanitizeCoordinates(decision.coordinates);
-  return decision;
-}
-
 // ===========================================
 // Main Agent Loop
 // ===========================================
 
-async function runAgent(goal: string, maxSteps?: number): Promise<void> {
+export async function runAgent(goal: string, maxSteps?: number): Promise<{ success: boolean; stepsUsed: number }> {
   const steps = maxSteps ?? Config.MAX_STEPS;
 
   // Phase 1A: Auto-detect screen resolution
@@ -485,7 +443,7 @@ async function runAgent(goal: string, maxSteps?: number): Promise<void> {
     if (decision.action === "done") {
       console.log("\nTask completed successfully.");
       logger.finalize(true);
-      return;
+      return { success: true, stepsUsed: step + 1 };
     }
 
     // Wait for UI to update
@@ -494,6 +452,7 @@ async function runAgent(goal: string, maxSteps?: number): Promise<void> {
 
   console.log("\nMax steps reached. Task may be incomplete.");
   logger.finalize(false);
+  return { success: false, stepsUsed: steps };
 }
 
 // ===========================================
@@ -508,7 +467,33 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Read user input from stdin
+  // Check for --workflow flag
+  const workflowIdx = process.argv.findIndex((a) => a === "--workflow" || a.startsWith("--workflow="));
+  if (workflowIdx !== -1) {
+    const arg = process.argv[workflowIdx];
+    const workflowFile = arg.includes("=")
+      ? arg.split("=")[1]
+      : process.argv[workflowIdx + 1];
+
+    if (!workflowFile) {
+      console.log("Error: --workflow requires a JSON file path.");
+      process.exit(1);
+    }
+
+    const { runWorkflow } = await import("./workflow.js");
+    const workflow = JSON.parse(await Bun.file(workflowFile).text());
+    const result = await runWorkflow(workflow);
+
+    console.log(`\n=== Workflow "${result.name}" ===`);
+    for (const step of result.steps) {
+      const status = step.success ? "OK" : "FAILED";
+      console.log(`  [${status}] ${step.goal} (${step.stepsUsed} steps)${step.error ? ` — ${step.error}` : ""}`);
+    }
+    console.log(`\nResult: ${result.success ? "All steps completed" : "Some steps failed"}`);
+    process.exit(result.success ? 0 : 1);
+  }
+
+  // Interactive mode: read goal from stdin
   process.stdout.write("Enter your goal: ");
   const goal = await new Promise<string>((resolve) => {
     const reader = Bun.stdin.stream().getReader();

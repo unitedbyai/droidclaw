@@ -1,0 +1,21 @@
+{
+  "name": "Logistics Agent v2.1",
+  "steps": [
+    {
+      "app": "com.whatsapp",
+      "goal": "Find the latest Bill of Lading image and save it"
+    },
+    {
+      "app": "com.intsig.camscanner",
+      "goal": "Crop and enhance the latest image"
+    },
+    {
+      "app": "com.rtspro.factoring",
+      "goal": "Fill out the invoice submission form",
+      "formData": {
+        "Invoice": "#9921",
+        "Amount": "$4,200.00"
+      }
+    }
+  ]
+}
