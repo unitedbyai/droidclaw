@@ -332,6 +332,18 @@
       font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
       font-size: 13px; line-height: 1.6; color: var(--text-secondary);
     }
+
+    /* ─── copy button ─── */
+    .copyable { position: relative; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 6px;
+      color: var(--text-muted); cursor: pointer; padding: 5px 7px; line-height: 0;
+      transition: all .15s; opacity: 0;
+    }
+    .copyable:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { background: rgba(255,255,255,.1); color: var(--text-secondary); border-color: var(--border-hover); }
+    .copy-btn.copied { color: var(--green); border-color: rgba(80,227,194,.3); background: rgba(80,227,194,.08); opacity: 1; }
     code {
       font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
       font-size: 13px; background: var(--bg-elevated); padding: 2px 6px; border-radius: 4px;
@@ -760,7 +772,12 @@ bun run src/kernel.ts --workflow morning.json</pre>
         <span class="stepper-num">1</span>
         <h3>install</h3>
         <p>one command. installs bun and adb if missing, clones the repo, sets up .env.</p>
+        <div class="copyable">
 <pre>curl -fsSL https://droidclaw.ai/install.sh | sh</pre>
+          <button class="copy-btn" onclick="copyCode(this)" aria-label="Copy to clipboard">
+            <iconify-icon icon="ph:copy-duotone" width="16" height="16"></iconify-icon>
+          </button>
+        </div>
         <p style="margin-top: 16px;">or do it manually:</p>
 <pre><span class="dim"># install adb</span>
 brew install android-platform-tools
@@ -975,6 +992,22 @@ logger.ts          session logging</pre>
     </p>
   </div>
 </footer>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.parentElement.querySelector('pre');
+  const text = pre.textContent.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const icon = btn.querySelector('iconify-icon');
+    icon.setAttribute('icon', 'ph:check-duotone');
+    btn.classList.add('copied');
+    setTimeout(() => {
+      icon.setAttribute('icon', 'ph:copy-duotone');
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+</script>
 
 </body>
 </html>
