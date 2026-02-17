@@ -25,7 +25,9 @@ goals.post("/", async (c) => {
     return c.json({ error: "deviceId and goal are required" }, 400);
   }
 
-  const device = sessions.getDevice(body.deviceId);
+  // Look up by connection ID first, then by persistent DB ID
+  const device = sessions.getDevice(body.deviceId)
+    ?? sessions.getDeviceByPersistentId(body.deviceId);
   if (!device) {
     return c.json({ error: "device not connected" }, 404);
   }
@@ -35,8 +37,9 @@ goals.post("/", async (c) => {
   }
 
   // Prevent multiple agent loops on the same device
-  if (activeSessions.has(body.deviceId)) {
-    const existing = activeSessions.get(body.deviceId)!;
+  const trackingKey = device.persistentDeviceId ?? device.deviceId;
+  if (activeSessions.has(trackingKey)) {
+    const existing = activeSessions.get(trackingKey)!;
     return c.json(
       { error: "agent already running on this device", sessionId: existing.sessionId, goal: existing.goal },
       409
@@ -55,7 +58,8 @@ goals.post("/", async (c) => {
   }
 
   const options: AgentLoopOptions = {
-    deviceId: body.deviceId,
+    deviceId: device.deviceId,
+    persistentDeviceId: device.persistentDeviceId,
     userId: user.id,
     goal: body.goal,
     llmConfig,
@@ -67,20 +71,19 @@ goals.post("/", async (c) => {
   const loopPromise = runAgentLoop(options);
 
   // Track as active until it completes
-  const trackingId = body.deviceId;
   const sessionPlaceholder = { sessionId: "pending", goal: body.goal };
-  activeSessions.set(trackingId, sessionPlaceholder);
+  activeSessions.set(trackingKey, sessionPlaceholder);
 
   loopPromise
     .then((result) => {
-      activeSessions.delete(trackingId);
+      activeSessions.delete(trackingKey);
       console.log(
-        `[Agent] Completed on ${body.deviceId}: ${result.success ? "success" : "incomplete"} in ${result.stepsUsed} steps (session ${result.sessionId})`
+        `[Agent] Completed on ${device.deviceId}: ${result.success ? "success" : "incomplete"} in ${result.stepsUsed} steps (session ${result.sessionId})`
       );
     })
     .catch((err) => {
-      activeSessions.delete(trackingId);
-      console.error(`[Agent] Error on ${body.deviceId}: ${err}`);
+      activeSessions.delete(trackingKey);
+      console.error(`[Agent] Error on ${device.deviceId}: ${err}`);
     });
 
   // We need the sessionId from the loop, but it's created inside runAgentLoop.

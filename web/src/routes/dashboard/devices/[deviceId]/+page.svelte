@@ -370,7 +370,7 @@
 		</div>
 
 		<!-- Live Steps -->
-		{#if steps.length > 0 || runStatus === 'running'}
+		{#if steps.length > 0 || runStatus !== 'idle'}
 			<div class="rounded-lg border border-neutral-200">
 				<div
 					class="flex items-center justify-between border-b border-neutral-200 px-5 py-3"

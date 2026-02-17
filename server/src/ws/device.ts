@@ -122,6 +122,7 @@ export async function handleDeviceMessage(
       // Register device in session manager
       sessions.addDevice({
         deviceId,
+        persistentDeviceId,
         userId,
         ws,
         deviceInfo: msg.deviceInfo,

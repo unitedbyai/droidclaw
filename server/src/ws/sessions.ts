@@ -14,6 +14,7 @@ export interface WebSocketData {
 /** A connected Android device */
 export interface ConnectedDevice {
   deviceId: string;
+  persistentDeviceId?: string;
   userId: string;
   ws: ServerWebSocket<WebSocketData>;
   deviceInfo?: DeviceInfo;
@@ -54,6 +55,16 @@ class SessionManager {
 
   getDevice(deviceId: string): ConnectedDevice | undefined {
     return this.devices.get(deviceId);
+  }
+
+  /** Look up a device by its persistent DB ID (survives reconnects) */
+  getDeviceByPersistentId(persistentId: string): ConnectedDevice | undefined {
+    for (const device of this.devices.values()) {
+      if (device.persistentDeviceId === persistentId) {
+        return device;
+      }
+    }
+    return undefined;
   }
 
   getDevicesForUser(userId: string): ConnectedDevice[] {
