@@ -108,7 +108,7 @@ export const listDeviceSessions = query(async (deviceId: string) => {
 	return sessions;
 });
 
-export const listSessionSteps = query(async (deviceId: string, sessionId: string) => {
+export const listSessionSteps = query(async ({ deviceId, sessionId }: { deviceId: string; sessionId: string }) => {
 	const { locals } = getRequestEvent();
 	if (!locals.user) return [];
 

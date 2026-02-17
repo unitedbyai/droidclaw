@@ -19,7 +19,12 @@
 	const deviceData = allDevices.find((d) => d.deviceId === deviceId);
 
 	// Device stats
-	const stats = await getDeviceStats(deviceId);
+	const stats = (await getDeviceStats(deviceId)) as {
+		totalSessions: number;
+		successRate: number;
+		avgSteps: number;
+		lastGoal: { goal: string; status: string; startedAt: Date } | null;
+	} | null;
 
 	// Session history
 	interface Session {
@@ -59,7 +64,7 @@
 		}
 		expandedSession = sessionId;
 		if (!sessionSteps.has(sessionId)) {
-			const loadedSteps = await listSessionSteps(deviceId, sessionId);
+			const loadedSteps = await listSessionSteps({ deviceId, sessionId });
 			sessionSteps.set(sessionId, loadedSteps as Step[]);
 			sessionSteps = new Map(sessionSteps);
 		}

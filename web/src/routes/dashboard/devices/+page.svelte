@@ -4,22 +4,37 @@
 	import { onMount } from 'svelte';
 	import DeviceCard from '$lib/components/DeviceCard.svelte';
 
+	interface DeviceEntry {
+		deviceId: string;
+		name: string;
+		status: 'online' | 'offline';
+		model: string | null;
+		manufacturer: string | null;
+		androidVersion: string | null;
+		screenWidth: number | null;
+		screenHeight: number | null;
+		batteryLevel: number | null;
+		isCharging: boolean;
+		lastSeen: string;
+		lastGoal: { goal: string; status: string; startedAt: string } | null;
+	}
+
 	const initialDevices = await listDevices();
 
-	let devices = $state(
+	let devices = $state<DeviceEntry[]>(
 		initialDevices.map((d) => ({
 			deviceId: d.deviceId,
 			name: d.name,
 			status: d.status as 'online' | 'offline',
-			model: d.model,
-			manufacturer: d.manufacturer,
-			androidVersion: d.androidVersion,
-			screenWidth: d.screenWidth,
-			screenHeight: d.screenHeight,
-			batteryLevel: d.batteryLevel,
-			isCharging: d.isCharging,
+			model: d.model as string | null,
+			manufacturer: d.manufacturer as string | null,
+			androidVersion: d.androidVersion as string | null,
+			screenWidth: d.screenWidth as number | null,
+			screenHeight: d.screenHeight as number | null,
+			batteryLevel: d.batteryLevel as number | null,
+			isCharging: d.isCharging as boolean,
 			lastSeen: d.lastSeen,
-			lastGoal: d.lastGoal
+			lastGoal: d.lastGoal as DeviceEntry['lastGoal']
 		}))
 	);
 
