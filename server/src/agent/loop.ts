@@ -26,6 +26,7 @@ import {
   type LLMConfig,
 } from "./llm.js";
 import { formatAppHints } from "./hints.js";
+import { isSkillAction, executeSkill } from "./skills.js";
 import { createStuckDetector } from "./stuck.js";
 import { db } from "../db.js";
 import { agentSession, agentStep, device as deviceTable } from "../schema.js";
@@ -568,20 +569,32 @@ export async function runAgentLoop(
           );
       }
 
-      // ── 9. Execute on device ────────────────────────────────
-      const command = actionToCommand(action);
+      // ── 9. Execute on device (skills intercepted server-side) ──
       try {
-        const result = (await sessions.sendCommand(deviceId, command)) as {
-          success?: boolean;
-          error?: string;
-          data?: string;
-        };
-        const resultSuccess = result.success !== false;
-        lastActionFeedback = `${actionSig} -> ${resultSuccess ? "OK" : "FAILED"}: ${result.error ?? result.data ?? "completed"}`;
+        if (isSkillAction(action.action)) {
+          // Multi-step skill: run server-side using WebSocket primitives
+          const skillResult = await executeSkill(
+            deviceId,
+            action as unknown as Record<string, unknown> & { action: string },
+            elements
+          );
+          lastActionFeedback = `${actionSig} -> ${skillResult.success ? "OK" : "FAILED"}: ${skillResult.message}`;
+        } else {
+          // Regular action: map to WebSocket command and send to device
+          const command = actionToCommand(action);
+          const result = (await sessions.sendCommand(deviceId, command)) as {
+            success?: boolean;
+            error?: string;
+            data?: string;
+          };
+          const resultSuccess = result.success !== false;
+          lastActionFeedback = `${actionSig} -> ${resultSuccess ? "OK" : "FAILED"}: ${result.error ?? result.data ?? "completed"}`;
+        }
         console.log(`[Agent ${sessionId}] Step ${step + 1} result: ${lastActionFeedback}`);
         // Append result to last history entry
         if (actionHistory.length > 0) {
-          actionHistory[actionHistory.length - 1] += ` → ${resultSuccess ? "OK" : "FAILED"}`;
+          const ok = lastActionFeedback.includes("-> OK");
+          actionHistory[actionHistory.length - 1] += ` → ${ok ? "OK" : "FAILED"}`;
         }
         // Update step result in DB
         if (persistentDeviceId) {
