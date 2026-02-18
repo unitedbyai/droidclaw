@@ -78,6 +78,13 @@ class ReliableWebSocket(
 
     private suspend fun connectOnce(serverUrl: String, apiKey: String, deviceInfo: DeviceInfoMsg) {
         val httpClient = HttpClient(CIO) {
+            engine {
+                requestTimeout = 30_000
+                endpoint {
+                    connectTimeout = 10_000
+                    keepAliveTime = 30_000
+                }
+            }
             install(WebSockets) {
                 pingIntervalMillis = 30_000
             }
