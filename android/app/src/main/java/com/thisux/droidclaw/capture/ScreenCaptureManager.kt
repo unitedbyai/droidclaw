@@ -1,9 +1,12 @@
 package com.thisux.droidclaw.capture
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.get
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
@@ -19,16 +22,19 @@ class ScreenCaptureManager(private val context: Context) {
 
     companion object {
         private const val TAG = "ScreenCapture"
-        const val REQUEST_CODE = 1001
         val isAvailable = MutableStateFlow(false)
 
         // Stores MediaProjection consent for use by ConnectionService
         var consentResultCode: Int? = null
         var consentData: Intent? = null
 
+        // Expose consent as state so UI can react immediately
+        val hasConsentState = MutableStateFlow(false)
+
         fun storeConsent(resultCode: Int, data: Intent?) {
             consentResultCode = resultCode
             consentData = data
+            hasConsentState.value = (resultCode == Activity.RESULT_OK && data != null)
         }
 
         fun hasConsent(): Boolean = consentResultCode != null && consentData != null
@@ -86,7 +92,7 @@ class ScreenCaptureManager(private val context: Context) {
             val rowStride = planes[0].rowStride
             val rowPadding = rowStride - pixelStride * image.width
 
-            val bitmap = Bitmap.createBitmap(
+            val bitmap = createBitmap(
                 image.width + rowPadding / pixelStride,
                 image.height,
                 Bitmap.Config.ARGB_8888
@@ -119,7 +125,7 @@ class ScreenCaptureManager(private val context: Context) {
             bitmap.width - 1 to bitmap.height - 1,
             bitmap.width / 2 to bitmap.height / 2
         )
-        return points.all { (x, y) -> bitmap.getPixel(x, y) == android.graphics.Color.BLACK }
+        return points.all { (x, y) -> bitmap[x, y] == android.graphics.Color.BLACK }
     }
 
     fun release() {

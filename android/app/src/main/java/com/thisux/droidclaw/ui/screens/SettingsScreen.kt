@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,8 +37,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.thisux.droidclaw.DroidClawApp
 import com.thisux.droidclaw.accessibility.DroidClawAccessibilityService
 import com.thisux.droidclaw.capture.ScreenCaptureManager
@@ -58,8 +62,21 @@ fun SettingsScreen() {
 
     val isAccessibilityEnabled by DroidClawAccessibilityService.isRunning.collectAsState()
     val isCaptureAvailable by ScreenCaptureManager.isAvailable.collectAsState()
-    val hasCaptureConsent = isCaptureAvailable || ScreenCaptureManager.hasConsent()
-    val isBatteryExempt = remember { BatteryOptimization.isIgnoringBatteryOptimizations(context) }
+    val hasConsent by ScreenCaptureManager.hasConsentState.collectAsState()
+    val hasCaptureConsent = isCaptureAvailable || hasConsent
+
+    var isBatteryExempt by remember { mutableStateOf(BatteryOptimization.isIgnoringBatteryOptimizations(context)) }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                isBatteryExempt = BatteryOptimization.isIgnoringBatteryOptimizations(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val projectionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()

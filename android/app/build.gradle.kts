@@ -64,6 +64,7 @@ dependencies {
 
     // Lifecycle service
     implementation(libs.lifecycle.service)
+    implementation(libs.lifecycle.runtime.compose)
 
     // Navigation
     implementation(libs.navigation.compose)
