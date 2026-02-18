@@ -92,12 +92,6 @@ export async function handleDeviceMessage(
     try {
       // Hash the incoming key and look it up directly in the DB
       const hashedKey = await hashApiKey(msg.apiKey);
-      console.log(`[Device Auth] key prefix: ${msg.apiKey.slice(0, 10)}... hash: ${hashedKey.slice(0, 16)}...`);
-
-      // Debug: list all keys in DB
-      const allKeys = await db.select({ id: apikey.id, keyPrefix: apikey.start, hash: apikey.key, enabled: apikey.enabled }).from(apikey);
-      console.log(`[Device Auth] DB has ${allKeys.length} keys:`, allKeys.map(k => `${k.keyPrefix ?? "?"} hash=${k.hash.slice(0, 16)}... enabled=${k.enabled}`));
-
       const rows = await db
         .select({ id: apikey.id, userId: apikey.userId, enabled: apikey.enabled, expiresAt: apikey.expiresAt })
         .from(apikey)
@@ -105,7 +99,6 @@ export async function handleDeviceMessage(
         .limit(1);
 
       if (rows.length === 0 || !rows[0].enabled) {
-        console.log(`[Device Auth] REJECTED: no matching key found (or disabled)`);
         ws.send(
           JSON.stringify({
             type: "auth_error",

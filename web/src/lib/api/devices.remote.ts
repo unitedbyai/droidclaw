@@ -161,15 +161,19 @@ export const listSessionSteps = query(
 // ─── Commands (write operations) ─────────────────────────────
 
 const SERVER_URL = () => env.SERVER_URL || 'http://localhost:8080';
+const INTERNAL_SECRET = () => env.INTERNAL_SECRET || '';
 
-/** Forward a request to the DroidClaw server with auth cookies */
+/** Forward a request to the DroidClaw server with internal auth */
 async function serverFetch(path: string, body: Record<string, unknown>) {
-	const { request } = getRequestEvent();
+	const { locals } = getRequestEvent();
+	if (!locals.user) throw new Error('unauthorized');
+
 	const res = await fetch(`${SERVER_URL()}${path}`, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			cookie: request.headers.get('cookie') ?? ''
+			'x-internal-secret': INTERNAL_SECRET(),
+			'x-internal-user-id': locals.user.id
 		},
 		body: JSON.stringify(body)
 	});
