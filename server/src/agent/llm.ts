@@ -125,10 +125,11 @@ Multi-Step Actions (PREFER these over basic actions when applicable):
   {"action": "copy_visible_text", "reason": "Copy all visible text to clipboard"}
   {"action": "copy_visible_text", "query": "search term", "reason": "Copy matching text to clipboard"}
   {"action": "wait_for_content", "reason": "Wait for new content to appear"}
-  {"action": "find_and_tap", "query": "Button Label", "reason": "Find element by text and tap it"}
+  {"action": "find_and_tap", "query": "Settings", "reason": "Scroll to find a VISIBLE button/label and tap it"}
   {"action": "compose_email", "query": "recipient@email.com", "reason": "Fill email To+Body, pastes clipboard into body"}
   {"action": "compose_email", "query": "recipient@email.com", "text": "body", "reason": "Fill email with specific body"}
   NOTE: compose_email REQUIRES "query" = recipient email. "text" is optional body (clipboard used if empty).
+  NOTE: find_and_tap is ONLY for tapping elements that ALREADY EXIST on screen (buttons, menu items, labels). It scrolls to find them. To INPUT text into a search bar or text field, use "type" action instead — NEVER use find_and_tap for typing.
 
 ═══════════════════════════════════════════
 ELEMENT PROPERTIES YOU WILL SEE
@@ -301,7 +302,7 @@ App Control:
 
 Multi-Step:
   {"action": "read_screen", "reason": "Scroll through page, collect all text to clipboard"}
-  {"action": "find_and_tap", "query": "Button Label", "reason": "Find and tap element by text"}
+  {"action": "find_and_tap", "query": "Settings", "reason": "Scroll to find a VISIBLE button/label and tap it (NOT for typing text!)"}
   {"action": "copy_visible_text", "reason": "Copy all visible text to clipboard"}`;
 
   if (hasEditableFields) {
@@ -329,7 +330,8 @@ RULES:
 - Say "done" as soon as the goal is achieved.
 - CHECK RECENT_ACTIONS before every step: if you already typed text and tapped send, do NOT type it again.
 - CHAT APP COMPLETION: After typing a message and tapping send in a chat app (WhatsApp, Messages, etc.), if the text field is now EMPTY and your message text appears in the conversation above, the message was SENT SUCCESSFULLY. Say "done" immediately.
-- COPY-PASTE: Use clipboard_set with text from SCREEN_CONTEXT (most reliable), then paste. Or just type directly.`;
+- COPY-PASTE: Use clipboard_set with text from SCREEN_CONTEXT (most reliable), then paste. Or just type directly.
+- TEXT INPUT vs FIND: To INPUT text (search queries, messages, form data), use "type". To tap a VISIBLE button/label, use "find_and_tap". NEVER use find_and_tap to enter text — it scrolls looking for text that doesn't exist yet.`;
 
   if (isStuck) {
     prompt += `
