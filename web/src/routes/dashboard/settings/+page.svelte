@@ -3,6 +3,8 @@
 	import { page } from '$app/state';
 	import Icon from '@iconify/svelte';
 	import { toast } from '$lib/toast';
+	import { track } from '$lib/analytics/track';
+	import { SETTINGS_SAVE } from '$lib/analytics/events';
 
 	const config = await getConfig();
 	const layoutData = page.data;
@@ -10,6 +12,7 @@
 	$effect(() => {
 		if (updateConfig.result?.saved) {
 			toast.success('Settings saved');
+			track(SETTINGS_SAVE);
 		}
 	});
 </script>

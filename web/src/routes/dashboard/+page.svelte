@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import { DASHBOARD_CARD_CLICK } from '$lib/analytics/events';
 
 	let { data } = $props();
 
@@ -49,6 +50,8 @@
 	{#each cards as card}
 		<a
 			href={card.href}
+			data-umami-event={DASHBOARD_CARD_CLICK}
+			data-umami-event-section={card.title.toLowerCase().replace(' ', '-')}
 			class="group flex items-start gap-4 rounded-xl border border-neutral-200 p-5 transition-all hover:border-neutral-300 hover:shadow-sm"
 		>
 			<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {card.color}">

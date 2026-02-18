@@ -1,4 +1,7 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
+	import { DEVICE_CARD_CLICK } from '$lib/analytics/events';
+
 	interface Props {
 		deviceId: string;
 		name: string;
@@ -41,16 +44,16 @@
 	}
 
 	function batteryIcon(level: number | null, charging: boolean): string {
-		if (level === null || level < 0) return '?';
-		if (charging) return '⚡';
-		if (level > 75) return '█';
-		if (level > 50) return '▆';
-		if (level > 25) return '▄';
-		return '▂';
+		if (level === null || level < 0) return 'ph:battery-empty-duotone';
+		if (charging) return 'ph:battery-charging-duotone';
+		if (level > 75) return 'ph:battery-full-duotone';
+		if (level > 50) return 'ph:battery-high-duotone';
+		if (level > 25) return 'ph:battery-medium-duotone';
+		return 'ph:battery-low-duotone';
 	}
 </script>
 
-<a href="/dashboard/devices/{deviceId}" class="group block">
+<a href="/dashboard/devices/{deviceId}" data-umami-event={DEVICE_CARD_CLICK} data-umami-event-device={model ?? name} class="group block">
 	<!-- Phone frame -->
 	<div
 		class="relative mx-auto w-48 overflow-hidden rounded-[2rem] border-2 bg-white transition-all
@@ -79,9 +82,10 @@
 			</div>
 			{#if batteryLevel !== null && batteryLevel >= 0}
 				<div class="flex items-center gap-0.5">
-					<span class="text-[10px] {batteryLevel <= 20 ? 'text-red-500' : 'text-neutral-400'}">
-						{batteryIcon(batteryLevel, isCharging)}
-					</span>
+					<Icon
+						icon={batteryIcon(batteryLevel, isCharging)}
+						class="h-3.5 w-3.5 {batteryLevel <= 20 ? 'text-red-500' : 'text-neutral-400'}"
+					/>
 					<span class="text-[10px] {batteryLevel <= 20 ? 'text-red-500' : 'text-neutral-400'}">
 						{batteryLevel}%
 					</span>
@@ -93,19 +97,7 @@
 		<div class="flex flex-1 flex-col items-center px-4 pt-4">
 			<!-- Device icon -->
 			<div class="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100">
-				<svg
-					class="h-5 w-5 text-neutral-500"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-					stroke-width="1.5"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"
-					/>
-				</svg>
+				<Icon icon="ph:device-mobile-duotone" class="h-5 w-5 text-neutral-500" />
 			</div>
 
 			<!-- Device name -->
@@ -139,12 +131,20 @@
 				<p class="truncate text-[10px] text-neutral-600">{lastGoal.goal}</p>
 				<div class="mt-0.5 flex items-center justify-between">
 					<span
-						class="text-[9px] font-medium {lastGoal.status === 'completed'
+						class="flex items-center gap-0.5 text-[9px] font-medium {lastGoal.status === 'completed'
 							? 'text-green-600'
 							: lastGoal.status === 'running'
 								? 'text-amber-600'
 								: 'text-red-500'}"
 					>
+						<Icon
+							icon={lastGoal.status === 'completed'
+								? 'ph:check-circle-duotone'
+								: lastGoal.status === 'running'
+									? 'ph:circle-notch-duotone'
+									: 'ph:x-circle-duotone'}
+							class="h-3 w-3"
+						/>
 						{lastGoal.status === 'completed'
 							? 'Success'
 							: lastGoal.status === 'running'

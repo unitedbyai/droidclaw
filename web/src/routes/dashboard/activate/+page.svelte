@@ -2,6 +2,7 @@
 	import { activateLicense, activateFromCheckout } from '$lib/api/license.remote';
 	import { page } from '$app/state';
 	import Icon from '@iconify/svelte';
+	import { LICENSE_ACTIVATE_CHECKOUT, LICENSE_ACTIVATE_MANUAL, LICENSE_PURCHASE_CLICK } from '$lib/analytics/events';
 
 	const checkoutId = page.url.searchParams.get('checkout_id');
 </script>
@@ -23,6 +24,7 @@
 			<input type="hidden" {...activateFromCheckout.fields.checkoutId.as('text')} value={checkoutId} />
 			<button
 				type="submit"
+				data-umami-event={LICENSE_ACTIVATE_CHECKOUT}
 				class="flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 font-medium text-white hover:bg-neutral-800"
 			>
 				<Icon icon="ph:seal-check-duotone" class="h-4 w-4" />
@@ -58,6 +60,7 @@
 
 			<button
 				type="submit"
+				data-umami-event={LICENSE_ACTIVATE_MANUAL}
 				class="flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 font-medium text-white hover:bg-neutral-800"
 			>
 				<Icon icon="ph:seal-check-duotone" class="h-4 w-4" />
@@ -96,6 +99,7 @@
 
 			<button
 				type="submit"
+				data-umami-event={LICENSE_ACTIVATE_MANUAL}
 				class="flex w-full items-center justify-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 font-medium text-white hover:bg-neutral-800"
 			>
 				<Icon icon="ph:seal-check-duotone" class="h-4 w-4" />
@@ -105,7 +109,7 @@
 
 		<p class="mt-6 text-center text-sm text-neutral-400">
 			Don't have a key?
-			<a href="https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_5pGavRIJJhM8ge6p0UaeaadT2bCiqL04CYXgW3bwVac/redirect" class="font-medium text-neutral-700 underline hover:text-neutral-900">
+			<a href="https://sandbox-api.polar.sh/v1/checkout-links/polar_cl_5pGavRIJJhM8ge6p0UaeaadT2bCiqL04CYXgW3bwVac/redirect" data-umami-event={LICENSE_PURCHASE_CLICK} class="font-medium text-neutral-700 underline hover:text-neutral-900">
 				Purchase here
 			</a>
 		</p>

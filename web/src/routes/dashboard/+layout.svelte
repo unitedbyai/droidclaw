@@ -5,6 +5,7 @@
 	import { page } from '$app/state';
 	import Icon from '@iconify/svelte';
 	import { Toaster } from 'svelte-sonner';
+	import { AUTH_SIGNOUT, NAV_SIDEBAR_CLICK } from '$lib/analytics/events';
 
 	let { children, data } = $props();
 
@@ -37,6 +38,8 @@
 			{#each navItems as item}
 				<a
 					href={item.href}
+					data-umami-event={NAV_SIDEBAR_CLICK}
+					data-umami-event-section={item.label.toLowerCase().replace(' ', '-')}
 					class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors
 						{isActive(item.href, item.exact)
 						? 'bg-neutral-200/70 text-neutral-900'
@@ -60,6 +63,7 @@
 			<form {...signout}>
 				<button
 					type="submit"
+					data-umami-event={AUTH_SIGNOUT}
 					class="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
 				>
 					<Icon icon="ph:sign-out-duotone" class="h-5 w-5" />

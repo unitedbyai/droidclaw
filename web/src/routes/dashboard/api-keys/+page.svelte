@@ -2,6 +2,8 @@
 	import { listKeys, createKey, deleteKey } from '$lib/api/api-keys.remote';
 	import Icon from '@iconify/svelte';
 	import { toast } from '$lib/toast';
+	import { track } from '$lib/analytics/track';
+	import { APIKEY_CREATE, APIKEY_COPY, APIKEY_DELETE } from '$lib/analytics/events';
 
 	let newKeyValue = $state<string | null>(null);
 	let keysPromise = $state(listKeys());
@@ -11,6 +13,7 @@
 			newKeyValue = createKey.result.key;
 			keysPromise = listKeys();
 			toast.success('API key created');
+			track(APIKEY_CREATE);
 		}
 	});
 
@@ -18,6 +21,7 @@
 		if (deleteKey.result?.deleted) {
 			keysPromise = listKeys();
 			toast.success('API key deleted');
+			track(APIKEY_DELETE);
 		}
 	});
 </script>
@@ -70,6 +74,7 @@
 				onclick={() => {
 					navigator.clipboard.writeText(newKeyValue!);
 					toast.success('Copied to clipboard');
+					track(APIKEY_COPY);
 				}}
 				class="flex items-center gap-1.5 rounded-lg border border-yellow-400 px-3 py-2 text-sm font-medium text-yellow-800 hover:bg-yellow-100"
 			>
