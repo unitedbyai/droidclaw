@@ -6,6 +6,14 @@ import { apikey, llmConfig, device } from "../schema.js";
 import { sessions, type WebSocketData } from "./sessions.js";
 import { runPipeline } from "../agent/pipeline.js";
 import type { LLMConfig } from "../agent/llm.js";
+import {
+  handleWorkflowCreate,
+  handleWorkflowUpdate,
+  handleWorkflowDelete,
+  handleWorkflowSync,
+  handleWorkflowTrigger,
+} from "./workflow-handlers.js";
+import { classifyInput } from "../agent/input-classifier.js";
 
 /**
  * Hash an API key the same way better-auth does:
@@ -251,6 +259,20 @@ export async function handleDeviceMessage(
         break;
       }
 
+      // Classify: is this an immediate goal or a workflow?
+      try {
+        const classification = await classifyInput(goal, userLlmConfig);
+        if (classification.type === "workflow") {
+          console.log(`[Classifier] Input classified as workflow: ${goal}`);
+          handleWorkflowCreate(ws, goal).catch((err) =>
+            console.error(`[Workflow] Auto-create error:`, err)
+          );
+          break;
+        }
+      } catch (err) {
+        console.warn(`[Classifier] Classification failed, treating as goal:`, err);
+      }
+
       console.log(`[Pipeline] Starting goal for device ${deviceId}: ${goal}`);
       const abortController = new AbortController();
       activeSessions.set(deviceId, { goal, abort: abortController });
@@ -357,6 +379,59 @@ export async function handleDeviceMessage(
           batteryLevel: msg.batteryLevel,
           isCharging: msg.isCharging,
         });
+      }
+      break;
+    }
+
+    case "workflow_create": {
+      const description = (msg as unknown as { description: string }).description;
+      if (description) {
+        handleWorkflowCreate(ws, description).catch((err) =>
+          console.error(`[Workflow] Create error:`, err)
+        );
+      }
+      break;
+    }
+
+    case "workflow_update": {
+      const { workflowId, enabled } = msg as unknown as { workflowId: string; enabled?: boolean };
+      if (workflowId) {
+        handleWorkflowUpdate(ws, workflowId, enabled).catch((err) =>
+          console.error(`[Workflow] Update error:`, err)
+        );
+      }
+      break;
+    }
+
+    case "workflow_delete": {
+      const { workflowId } = msg as unknown as { workflowId: string };
+      if (workflowId) {
+        handleWorkflowDelete(ws, workflowId).catch((err) =>
+          console.error(`[Workflow] Delete error:`, err)
+        );
+      }
+      break;
+    }
+
+    case "workflow_sync": {
+      handleWorkflowSync(ws).catch((err) =>
+        console.error(`[Workflow] Sync error:`, err)
+      );
+      break;
+    }
+
+    case "workflow_trigger": {
+      const { workflowId, notificationApp, notificationTitle, notificationText } =
+        msg as unknown as {
+          workflowId: string;
+          notificationApp?: string;
+          notificationTitle?: string;
+          notificationText?: string;
+        };
+      if (workflowId) {
+        handleWorkflowTrigger(ws, workflowId, notificationApp, notificationTitle, notificationText).catch(
+          (err) => console.error(`[Workflow] Trigger error:`, err)
+        );
       }
       break;
     }

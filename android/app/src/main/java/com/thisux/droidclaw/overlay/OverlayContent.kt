@@ -84,7 +84,13 @@ fun OverlayContent() {
             !isConnected -> "Offline"
             displayStatus == GoalStatus.Running -> {
                 val last = steps.lastOrNull()
-                if (last != null) "Step ${last.step}: ${last.action}" else "Running..."
+                if (last != null) {
+                    val label = last.reasoning.ifBlank {
+                        // Extract just the action name from the JSON string
+                        Regex("""action[=:]?\s*(\w+)""").find(last.action)?.groupValues?.get(1) ?: "working"
+                    }
+                    "${last.step}: $label"
+                } else "Running..."
             }
             displayStatus == GoalStatus.Completed -> "Done"
             displayStatus == GoalStatus.Failed -> "Stopped"

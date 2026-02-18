@@ -77,6 +77,39 @@ data class StopGoalMessage(
 )
 
 @Serializable
+data class WorkflowCreateMessage(
+    val type: String = "workflow_create",
+    val description: String   // natural-language workflow description
+)
+
+@Serializable
+data class WorkflowUpdateMessage(
+    val type: String = "workflow_update",
+    val workflowId: String,
+    val enabled: Boolean? = null
+)
+
+@Serializable
+data class WorkflowDeleteMessage(
+    val type: String = "workflow_delete",
+    val workflowId: String
+)
+
+@Serializable
+data class WorkflowSyncMessage(
+    val type: String = "workflow_sync"
+)
+
+@Serializable
+data class WorkflowTriggerMessage(
+    val type: String = "workflow_trigger",
+    val workflowId: String,
+    val notificationApp: String? = null,
+    val notificationTitle: String? = null,
+    val notificationText: String? = null
+)
+
+@Serializable
 data class ServerMessage(
     val type: String,
     val requestId: String? = null,
@@ -106,5 +139,9 @@ data class ServerMessage(
     val intentUri: String? = null,
     val intentType: String? = null,
     val intentExtras: Map<String, String>? = null,
-    val setting: String? = null
+    val setting: String? = null,
+    // Workflow fields
+    val workflowId: String? = null,
+    val workflowJson: String? = null,       // single workflow as JSON
+    val workflowsJson: String? = null       // array of workflows as JSON (for sync)
 )

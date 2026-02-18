@@ -8,7 +8,12 @@ export type DeviceMessage =
   | { type: "pong" }
   | { type: "heartbeat"; batteryLevel: number; isCharging: boolean }
   | { type: "apps"; apps: InstalledApp[] }
-  | { type: "stop_goal" };
+  | { type: "stop_goal" }
+  | { type: "workflow_create"; description: string }
+  | { type: "workflow_update"; workflowId: string; enabled?: boolean }
+  | { type: "workflow_delete"; workflowId: string }
+  | { type: "workflow_sync" }
+  | { type: "workflow_trigger"; workflowId: string; notificationApp?: string; notificationTitle?: string; notificationText?: string };
 
 export type ServerToDeviceMessage =
   | { type: "auth_ok"; deviceId: string }

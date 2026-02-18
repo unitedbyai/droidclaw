@@ -29,6 +29,11 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import com.thisux.droidclaw.model.StopGoalMessage
+import com.thisux.droidclaw.model.WorkflowCreateMessage
+import com.thisux.droidclaw.model.WorkflowDeleteMessage
+import com.thisux.droidclaw.model.WorkflowSyncMessage
+import com.thisux.droidclaw.model.WorkflowTriggerMessage
+import com.thisux.droidclaw.model.WorkflowUpdateMessage
 import com.thisux.droidclaw.overlay.AgentOverlay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -122,7 +127,12 @@ class ConnectionService : LifecycleService() {
             }
             webSocket = ws
 
-            val router = CommandRouter(ws, captureManager)
+            val router = CommandRouter(
+                ws, captureManager,
+                onWorkflowSync = { workflows -> app.workflowStore.replaceAll(workflows) },
+                onWorkflowCreated = { workflow -> app.workflowStore.save(workflow) },
+                onWorkflowDeleted = { id -> app.workflowStore.delete(id) }
+            )
             commandRouter = router
 
             launch {
@@ -144,6 +154,8 @@ class ConnectionService : LifecycleService() {
                         val apps = getInstalledApps()
                         webSocket?.sendTyped(AppsMessage(apps = apps))
                         Log.i(TAG, "Sent ${apps.size} installed apps to server")
+                        // Sync workflows from server
+                        webSocket?.sendTyped(WorkflowSyncMessage())
                     }
                 }
             }
@@ -179,6 +191,26 @@ class ConnectionService : LifecycleService() {
 
     fun stopGoal() {
         webSocket?.sendTyped(StopGoalMessage())
+    }
+
+    fun sendWorkflowCreate(description: String) {
+        webSocket?.sendTyped(WorkflowCreateMessage(description = description))
+    }
+
+    fun sendWorkflowUpdate(workflowId: String, enabled: Boolean?) {
+        webSocket?.sendTyped(WorkflowUpdateMessage(workflowId = workflowId, enabled = enabled))
+    }
+
+    fun sendWorkflowDelete(workflowId: String) {
+        webSocket?.sendTyped(WorkflowDeleteMessage(workflowId = workflowId))
+    }
+
+    fun sendWorkflowSync() {
+        webSocket?.sendTyped(WorkflowSyncMessage())
+    }
+
+    fun sendWorkflowTrigger(msg: WorkflowTriggerMessage) {
+        webSocket?.sendTyped(msg)
     }
 
     private fun disconnect() {
