@@ -1,8 +1,11 @@
 package com.thisux.droidclaw.accessibility
 
 import android.accessibilityservice.AccessibilityService
+import android.content.ComponentName
+import android.content.Context
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
 import com.thisux.droidclaw.model.UIElement
 import kotlinx.coroutines.delay
@@ -16,6 +19,15 @@ class DroidClawAccessibilityService : AccessibilityService() {
         val isRunning = MutableStateFlow(false)
         val lastScreenTree = MutableStateFlow<List<UIElement>>(emptyList())
         var instance: DroidClawAccessibilityService? = null
+
+        fun isEnabledOnDevice(context: Context): Boolean {
+            val am = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
+            val ourComponent = ComponentName(context, DroidClawAccessibilityService::class.java)
+            return am.getEnabledAccessibilityServiceList(AccessibilityEvent.TYPES_ALL_MASK)
+                .any { it.resolveInfo.serviceInfo.let { si ->
+                    ComponentName(si.packageName, si.name) == ourComponent
+                }}
+        }
     }
 
     override fun onServiceConnected() {

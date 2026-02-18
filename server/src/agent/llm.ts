@@ -22,7 +22,8 @@ export interface LLMProvider {
   getAction(
     systemPrompt: string,
     userPrompt: string,
-    imageBase64?: string
+    imageBase64?: string,
+    signal?: AbortSignal
   ): Promise<string>;
 }
 
@@ -381,7 +382,8 @@ export function getLlmProvider(config: LLMConfig): LLMProvider {
     async getAction(
       systemPrompt: string,
       userPrompt: string,
-      imageBase64?: string
+      imageBase64?: string,
+      signal?: AbortSignal
     ): Promise<string> {
       const messages: Array<{ role: string; content: unknown }> = [
         { role: "system", content: systemPrompt },
@@ -418,6 +420,7 @@ export function getLlmProvider(config: LLMConfig): LLMProvider {
           max_tokens: 1024,
           response_format: { type: "json_object" },
         }),
+        signal,
       });
 
       if (!response.ok) {

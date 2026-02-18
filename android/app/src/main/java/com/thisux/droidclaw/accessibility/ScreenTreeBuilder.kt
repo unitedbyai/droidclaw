@@ -21,6 +21,9 @@ object ScreenTreeBuilder {
         parentDesc: String
     ) {
         try {
+            // Skip DroidClaw's own overlay nodes so the agent never sees them
+            if (node.packageName?.toString() == "com.thisux.droidclaw") return
+
             val rect = Rect()
             node.getBoundsInScreen(rect)
 

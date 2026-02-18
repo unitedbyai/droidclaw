@@ -128,6 +128,24 @@ export const agentSession = pgTable("agent_session", {
   completedAt: timestamp("completed_at"),
 });
 
+export const workflow = pgTable("workflow", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  triggerType: text("trigger_type").notNull().default("notification"),
+  conditions: jsonb("conditions").notNull().default("[]"),
+  goalTemplate: text("goal_template").notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
 export const agentStep = pgTable("agent_step", {
   id: text("id").primaryKey(),
   sessionId: text("session_id")

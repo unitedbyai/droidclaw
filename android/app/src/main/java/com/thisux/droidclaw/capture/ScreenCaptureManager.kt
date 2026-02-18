@@ -22,6 +22,9 @@ class ScreenCaptureManager(private val context: Context) {
 
     companion object {
         private const val TAG = "ScreenCapture"
+        private const val PREFS_NAME = "screen_capture"
+        private const val KEY_RESULT_CODE = "consent_result_code"
+        private const val KEY_CONSENT_URI = "consent_data_uri"
         val isAvailable = MutableStateFlow(false)
 
         // Stores MediaProjection consent for use by ConnectionService
@@ -35,6 +38,37 @@ class ScreenCaptureManager(private val context: Context) {
             consentResultCode = resultCode
             consentData = data
             hasConsentState.value = (resultCode == Activity.RESULT_OK && data != null)
+        }
+
+        fun storeConsent(context: Context, resultCode: Int, data: Intent?) {
+            storeConsent(resultCode, data)
+            if (resultCode == Activity.RESULT_OK && data != null) {
+                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                    .putInt(KEY_RESULT_CODE, resultCode)
+                    .putString(KEY_CONSENT_URI, data.toUri(0))
+                    .apply()
+            }
+        }
+
+        fun restoreConsent(context: Context) {
+            if (consentResultCode != null && consentData != null) return
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val code = prefs.getInt(KEY_RESULT_CODE, 0)
+            val uri = prefs.getString(KEY_CONSENT_URI, null)
+            if (code == Activity.RESULT_OK && uri != null) {
+                consentResultCode = code
+                consentData = Intent.parseUri(uri, 0)
+                hasConsentState.value = true
+            }
+        }
+
+        fun clearConsent(context: Context) {
+            consentResultCode = null
+            consentData = null
+            hasConsentState.value = false
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                .clear()
+                .apply()
         }
 
         fun hasConsent(): Boolean = consentResultCode != null && consentData != null

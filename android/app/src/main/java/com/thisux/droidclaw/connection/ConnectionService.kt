@@ -27,6 +27,14 @@ import com.thisux.droidclaw.model.InstalledAppInfo
 import com.thisux.droidclaw.util.DeviceInfoHelper
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.Settings
+import com.thisux.droidclaw.model.StopGoalMessage
+import com.thisux.droidclaw.model.WorkflowCreateMessage
+import com.thisux.droidclaw.model.WorkflowDeleteMessage
+import com.thisux.droidclaw.model.WorkflowSyncMessage
+import com.thisux.droidclaw.model.WorkflowTriggerMessage
+import com.thisux.droidclaw.model.WorkflowUpdateMessage
+import com.thisux.droidclaw.overlay.AgentOverlay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -56,11 +64,13 @@ class ConnectionService : LifecycleService() {
     private var commandRouter: CommandRouter? = null
     private var captureManager: ScreenCaptureManager? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var overlay: AgentOverlay? = null
 
     override fun onCreate() {
         super.onCreate()
         instance = this
         createNotificationChannel()
+        overlay = AgentOverlay(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -97,6 +107,7 @@ class ConnectionService : LifecycleService() {
                 return@launch
             }
 
+            ScreenCaptureManager.restoreConsent(this@ConnectionService)
             captureManager = ScreenCaptureManager(this@ConnectionService).also { mgr ->
                 if (ScreenCaptureManager.hasConsent()) {
                     try {
@@ -105,7 +116,8 @@ class ConnectionService : LifecycleService() {
                             ScreenCaptureManager.consentData!!
                         )
                     } catch (e: SecurityException) {
-                        Log.w(TAG, "Screen capture unavailable (needs mediaProjection service type): ${e.message}")
+                        Log.w(TAG, "Screen capture unavailable: ${e.message}")
+                        ScreenCaptureManager.clearConsent(this@ConnectionService)
                     }
                 }
             }
@@ -115,7 +127,12 @@ class ConnectionService : LifecycleService() {
             }
             webSocket = ws
 
-            val router = CommandRouter(ws, captureManager)
+            val router = CommandRouter(
+                ws, captureManager,
+                onWorkflowSync = { workflows -> app.workflowStore.replaceAll(workflows) },
+                onWorkflowCreated = { workflow -> app.workflowStore.save(workflow) },
+                onWorkflowDeleted = { id -> app.workflowStore.delete(id) }
+            )
             commandRouter = router
 
             launch {
@@ -131,9 +148,14 @@ class ConnectionService : LifecycleService() {
                     )
                     // Send installed apps list once connected
                     if (state == ConnectionState.Connected) {
+                        if (Settings.canDrawOverlays(this@ConnectionService)) {
+                            overlay?.show()
+                        }
                         val apps = getInstalledApps()
                         webSocket?.sendTyped(AppsMessage(apps = apps))
                         Log.i(TAG, "Sent ${apps.size} installed apps to server")
+                        // Sync workflows from server
+                        webSocket?.sendTyped(WorkflowSyncMessage())
                     }
                 }
             }
@@ -167,7 +189,32 @@ class ConnectionService : LifecycleService() {
         webSocket?.sendTyped(GoalMessage(text = text))
     }
 
+    fun stopGoal() {
+        webSocket?.sendTyped(StopGoalMessage())
+    }
+
+    fun sendWorkflowCreate(description: String) {
+        webSocket?.sendTyped(WorkflowCreateMessage(description = description))
+    }
+
+    fun sendWorkflowUpdate(workflowId: String, enabled: Boolean?) {
+        webSocket?.sendTyped(WorkflowUpdateMessage(workflowId = workflowId, enabled = enabled))
+    }
+
+    fun sendWorkflowDelete(workflowId: String) {
+        webSocket?.sendTyped(WorkflowDeleteMessage(workflowId = workflowId))
+    }
+
+    fun sendWorkflowSync() {
+        webSocket?.sendTyped(WorkflowSyncMessage())
+    }
+
+    fun sendWorkflowTrigger(msg: WorkflowTriggerMessage) {
+        webSocket?.sendTyped(msg)
+    }
+
     private fun disconnect() {
+        overlay?.hide()
         webSocket?.disconnect()
         webSocket = null
         commandRouter?.reset()
@@ -179,6 +226,8 @@ class ConnectionService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        overlay?.destroy()
+        overlay = null
         disconnect()
         instance = null
         super.onDestroy()

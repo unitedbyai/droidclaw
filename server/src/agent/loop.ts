@@ -489,9 +489,11 @@ export async function runAgentLoop(
         rawResponse = await llm.getAction(
           systemPrompt,
           userPrompt,
-          useScreenshot ? screenshot : undefined
+          useScreenshot ? screenshot : undefined,
+          signal
         );
       } catch (err) {
+        if (signal?.aborted) break;
         console.error(
           `[Agent ${sessionId}] LLM error at step ${step + 1}: ${(err as Error).message}`
         );
@@ -510,7 +512,8 @@ export async function runAgentLoop(
           rawResponse = await llm.getAction(
             systemPrompt,
             userPrompt + "\n\nIMPORTANT: Your previous response was not valid JSON. You MUST respond with ONLY a valid JSON object.",
-            useScreenshot ? screenshot : undefined
+            useScreenshot ? screenshot : undefined,
+            signal
           );
           parsed = parseJsonResponse(rawResponse);
         } catch {
@@ -634,6 +637,7 @@ export async function runAgentLoop(
       }
 
       // ── 10. Brief pause for UI to settle ────────────────────
+      if (signal?.aborted) break;
       await new Promise((r) => setTimeout(r, 500));
     }
   } catch (error) {

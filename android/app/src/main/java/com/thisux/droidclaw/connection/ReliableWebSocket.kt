@@ -6,8 +6,7 @@ import com.thisux.droidclaw.model.ConnectionState
 import com.thisux.droidclaw.model.DeviceInfoMsg
 import com.thisux.droidclaw.model.ServerMessage
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.engine.cio.endpoint
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.Frame
@@ -78,14 +77,7 @@ class ReliableWebSocket(
     }
 
     private suspend fun connectOnce(serverUrl: String, apiKey: String, deviceInfo: DeviceInfoMsg) {
-        val httpClient = HttpClient(CIO) {
-            engine {
-                requestTimeout = 30_000
-                endpoint {
-                    connectTimeout = 10_000
-                    keepAliveTime = 30_000
-                }
-            }
+        val httpClient = HttpClient(OkHttp) {
             install(WebSockets) {
                 pingIntervalMillis = 30_000
             }

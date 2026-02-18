@@ -12,14 +12,20 @@ import com.thisux.droidclaw.model.PongMessage
 import com.thisux.droidclaw.model.ResultResponse
 import com.thisux.droidclaw.model.ScreenResponse
 import com.thisux.droidclaw.model.ServerMessage
+import com.thisux.droidclaw.model.Workflow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.serialization.json.Json
 
 class CommandRouter(
     private val webSocket: ReliableWebSocket,
-    private val captureManager: ScreenCaptureManager?
+    private val captureManager: ScreenCaptureManager?,
+    private val onWorkflowSync: (suspend (List<Workflow>) -> Unit)? = null,
+    private val onWorkflowCreated: (suspend (Workflow) -> Unit)? = null,
+    private val onWorkflowDeleted: (suspend (String) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "CommandRouter"
+        private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     }
 
     val currentGoalStatus = MutableStateFlow(GoalStatus.Idle)
@@ -69,6 +75,38 @@ class CommandRouter(
             "goal_failed" -> {
                 currentGoalStatus.value = GoalStatus.Failed
                 Log.i(TAG, "Goal failed: ${msg.message}")
+            }
+
+            "workflow_created" -> {
+                val wfJson = msg.workflowJson ?: return
+                try {
+                    val wf = json.decodeFromString<Workflow>(wfJson)
+                    onWorkflowCreated?.invoke(wf)
+                    Log.i(TAG, "Workflow created: ${wf.name}")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to parse workflow_created: ${e.message}")
+                }
+            }
+            "workflow_synced" -> {
+                val wfsJson = msg.workflowsJson ?: return
+                try {
+                    val wfs = json.decodeFromString<List<Workflow>>(wfsJson)
+                    onWorkflowSync?.invoke(wfs)
+                    Log.i(TAG, "Workflows synced: ${wfs.size} workflows")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to parse workflow_synced: ${e.message}")
+                }
+            }
+            "workflow_deleted" -> {
+                val id = msg.workflowId ?: return
+                onWorkflowDeleted?.invoke(id)
+                Log.i(TAG, "Workflow deleted: $id")
+            }
+            "workflow_goal" -> {
+                val goal = msg.goal ?: return
+                Log.i(TAG, "Workflow-triggered goal: $goal")
+                // Submit as a regular goal via the WebSocket
+                webSocket.sendTyped(com.thisux.droidclaw.model.GoalMessage(text = goal))
             }
 
             else -> Log.w(TAG, "Unknown message type: ${msg.type}")

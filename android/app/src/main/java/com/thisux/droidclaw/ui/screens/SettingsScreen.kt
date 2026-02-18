@@ -2,7 +2,10 @@ package com.thisux.droidclaw.ui.screens
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.media.projection.MediaProjectionManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -46,6 +49,7 @@ import com.thisux.droidclaw.DroidClawApp
 import com.thisux.droidclaw.accessibility.DroidClawAccessibilityService
 import com.thisux.droidclaw.capture.ScreenCaptureManager
 import com.thisux.droidclaw.util.BatteryOptimization
+import com.thisux.droidclaw.workflow.WorkflowNotificationService
 import kotlinx.coroutines.launch
 
 @Composable
@@ -62,18 +66,31 @@ fun SettingsScreen() {
     var editingServerUrl by remember { mutableStateOf<String?>(null) }
     val displayServerUrl = editingServerUrl ?: serverUrl
 
-    val isAccessibilityEnabled by DroidClawAccessibilityService.isRunning.collectAsState()
     val isCaptureAvailable by ScreenCaptureManager.isAvailable.collectAsState()
-    val hasConsent by ScreenCaptureManager.hasConsentState.collectAsState()
-    val hasCaptureConsent = isCaptureAvailable || hasConsent
 
+    var isAccessibilityEnabled by remember {
+        mutableStateOf(DroidClawAccessibilityService.isEnabledOnDevice(context))
+    }
+    var hasCaptureConsent by remember {
+        ScreenCaptureManager.restoreConsent(context)
+        mutableStateOf(isCaptureAvailable || ScreenCaptureManager.hasConsent())
+    }
     var isBatteryExempt by remember { mutableStateOf(BatteryOptimization.isIgnoringBatteryOptimizations(context)) }
+    var hasOverlayPermission by remember { mutableStateOf(Settings.canDrawOverlays(context)) }
+    var isNotificationListenerEnabled by remember {
+        mutableStateOf(WorkflowNotificationService.isEnabled(context))
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
+                isAccessibilityEnabled = DroidClawAccessibilityService.isEnabledOnDevice(context)
+                ScreenCaptureManager.restoreConsent(context)
+                hasCaptureConsent = isCaptureAvailable || ScreenCaptureManager.hasConsent()
                 isBatteryExempt = BatteryOptimization.isIgnoringBatteryOptimizations(context)
+                hasOverlayPermission = Settings.canDrawOverlays(context)
+                isNotificationListenerEnabled = WorkflowNotificationService.isEnabled(context)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -84,7 +101,8 @@ fun SettingsScreen() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            ScreenCaptureManager.storeConsent(result.resultCode, result.data)
+            ScreenCaptureManager.storeConsent(context, result.resultCode, result.data)
+            hasCaptureConsent = true
         }
     }
 
@@ -171,6 +189,31 @@ fun SettingsScreen() {
             isOk = isBatteryExempt,
             actionLabel = "Disable",
             onAction = { BatteryOptimization.requestExemption(context) }
+        )
+
+        ChecklistItem(
+            label = "Overlay permission",
+            isOk = hasOverlayPermission,
+            actionLabel = "Grant",
+            onAction = {
+                context.startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:${context.packageName}")
+                    )
+                )
+            }
+        )
+
+        ChecklistItem(
+            label = "Notification listener (for workflows)",
+            isOk = isNotificationListenerEnabled,
+            actionLabel = "Enable",
+            onAction = {
+                context.startActivity(
+                    Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                )
+            }
         )
     }
 }
