@@ -8,7 +8,11 @@ export type DeviceMessage =
   | { type: "pong" }
   | { type: "heartbeat"; batteryLevel: number; isCharging: boolean }
   | { type: "apps"; apps: InstalledApp[] }
-  | { type: "stop_goal" };
+  | { type: "stop_goal" }
+  // Voice overlay
+  | { type: "voice_start" }
+  | { type: "voice_chunk"; data: string }
+  | { type: "voice_stop"; action: "send" | "cancel" };
 
 export type ServerToDeviceMessage =
   | { type: "auth_ok"; deviceId: string }
@@ -35,7 +39,10 @@ export type ServerToDeviceMessage =
   | { type: "intent"; requestId: string; intentAction: string; intentUri?: string; intentType?: string; intentExtras?: Record<string, string>; packageName?: string }
   | { type: "ping" }
   | { type: "goal_started"; sessionId: string; goal: string }
-  | { type: "goal_completed"; sessionId: string; success: boolean; stepsUsed: number };
+  | { type: "goal_completed"; sessionId: string; success: boolean; stepsUsed: number }
+  // Voice overlay
+  | { type: "transcript_partial"; text: string }
+  | { type: "transcript_final"; text: string };
 
 export type DashboardMessage =
   | { type: "device_online"; deviceId: string; name: string }
