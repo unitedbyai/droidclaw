@@ -28,3 +28,9 @@ data class GoalSession(
     val status: GoalStatus,
     val timestamp: Long = System.currentTimeMillis()
 )
+
+enum class OverlayMode {
+    Idle,
+    Listening,
+    Executing
+}

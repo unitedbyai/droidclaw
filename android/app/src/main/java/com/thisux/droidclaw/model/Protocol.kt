@@ -77,6 +77,23 @@ data class StopGoalMessage(
 )
 
 @Serializable
+data class VoiceStartMessage(
+    val type: String = "voice_start"
+)
+
+@Serializable
+data class VoiceChunkMessage(
+    val type: String = "voice_chunk",
+    val data: String
+)
+
+@Serializable
+data class VoiceStopMessage(
+    val type: String = "voice_stop",
+    val action: String
+)
+
+@Serializable
 data class ServerMessage(
     val type: String,
     val requestId: String? = null,
