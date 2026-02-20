@@ -18,7 +18,6 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.thisux.droidclaw.MainActivity
 import com.thisux.droidclaw.connection.ConnectionService
-import com.thisux.droidclaw.model.GoalStatus
 import com.thisux.droidclaw.model.OverlayMode
 import com.thisux.droidclaw.ui.theme.DroidClawTheme
 
@@ -191,7 +190,16 @@ class AgentOverlay(private val service: LifecycleService) {
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
             setViewTreeLifecycleOwner(service)
             setViewTreeSavedStateRegistryOwner(savedStateOwner)
-            setContent { OverlayContent() }
+            setContent {
+                OverlayContent(
+                    onTextTap = {
+                        hidePill()
+                        commandPanel.show()
+                    },
+                    onMicTap = { startListening() },
+                    onStopTap = { ConnectionService.instance?.stopGoal() }
+                )
+            }
             setupDrag(this)
         }
 
@@ -254,7 +262,7 @@ class AgentOverlay(private val service: LifecycleService) {
         var initialTouchY = 0f
         var isDragging = false
 
-        view.setOnTouchListener { _, event ->
+        view.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     initialX = pillParams.x
@@ -262,7 +270,8 @@ class AgentOverlay(private val service: LifecycleService) {
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
                     isDragging = false
-                    true
+                    // Let Compose also receive the DOWN event
+                    false
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val dx = (event.rawX - initialTouchX).toInt()
@@ -270,13 +279,20 @@ class AgentOverlay(private val service: LifecycleService) {
                     if (!isDragging && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
                         isDragging = true
                         dismissTarget.show()
+                        // Cancel Compose's touch tracking so it doesn't
+                        // fire a click when the drag ends
+                        val cancel = MotionEvent.obtain(event).apply {
+                            action = MotionEvent.ACTION_CANCEL
+                        }
+                        v.dispatchTouchEvent(cancel)
+                        cancel.recycle()
                     }
                     if (isDragging) {
                         pillParams.x = initialX + dx
                         pillParams.y = initialY + dy
                         windowManager.updateViewLayout(view, pillParams)
                     }
-                    true
+                    isDragging
                 }
                 MotionEvent.ACTION_UP -> {
                     if (isDragging) {
@@ -288,17 +304,13 @@ class AgentOverlay(private val service: LifecycleService) {
                             pillParams.y = 200
                             hide()
                         }
+                        isDragging = false
+                        true
                     } else {
-                        // Tap: if running, stop goal; otherwise show command panel
-                        if (ConnectionService.currentGoalStatus.value == GoalStatus.Running) {
-                            ConnectionService.instance?.stopGoal()
-                        } else {
-                            hide()
-                            commandPanel.show()
-                        }
+                        isDragging = false
+                        // Let Compose handle the tap via its clickable callbacks
+                        false
                     }
-                    isDragging = false
-                    true
                 }
                 else -> false
             }
