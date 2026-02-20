@@ -90,17 +90,22 @@ fun OverlayContent(
             label = "dotColor"
         )
 
-        // Pulse animation for running state dot
-        val pulseTransition = rememberInfiniteTransition(label = "pulse")
-        val pulseScale by pulseTransition.animateFloat(
-            initialValue = 0.8f,
-            targetValue = 1.3f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(800, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "pulseScale"
-        )
+        // Pulse animation for running state dot (only allocated when running)
+        val dotScale = if (isRunning) {
+            val transition = rememberInfiniteTransition(label = "pulse")
+            val scale by transition.animateFloat(
+                initialValue = 0.8f,
+                targetValue = 1.3f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(800, easing = LinearEasing),
+                    repeatMode = RepeatMode.Reverse
+                ),
+                label = "pulseScale"
+            )
+            scale
+        } else {
+            1f
+        }
 
         // Status text
         val statusText = when {
@@ -110,7 +115,7 @@ fun OverlayContent(
                 if (latestStep != null) {
                     "${latestStep.step}. ${latestStep.reasoning}"
                 } else {
-                    "running"
+                    "starting.."
                 }
             }
             displayStatus == GoalStatus.Completed -> "completed"
@@ -133,9 +138,7 @@ fun OverlayContent(
             Box(
                 modifier = Modifier
                     .size(8.dp)
-                    .then(
-                        if (isRunning) Modifier.scale(pulseScale) else Modifier
-                    )
+                    .scale(dotScale)
                     .clip(CircleShape)
                     .background(dotColor)
             )
@@ -168,7 +171,7 @@ fun OverlayContent(
             // Right icon (conditional)
             when {
                 isIdle -> {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Icon(
                         imageVector = Icons.Filled.Mic,
                         contentDescription = "Voice input",
@@ -183,11 +186,11 @@ fun OverlayContent(
                     )
                 }
                 isRunning -> {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Icon(
                         imageVector = Icons.Filled.Close,
                         contentDescription = "Stop",
-                        tint = Color.White,
+                        tint = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier
                             .size(20.dp)
                             .clickable(
