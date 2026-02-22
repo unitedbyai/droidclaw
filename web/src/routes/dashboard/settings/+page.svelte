@@ -6,11 +6,14 @@
 	import { track } from '$lib/analytics/track';
 	import { SETTINGS_SAVE } from '$lib/analytics/events';
 
-	const config = await getConfig();
+	let config = $state(await getConfig());
 	const layoutData = page.data;
 
 	$effect(() => {
 		if (updateConfig.result?.saved) {
+			getConfig().then((c) => {
+				if (c) config = c;
+			});
 			toast.success('Settings saved');
 			track(SETTINGS_SAVE);
 		}

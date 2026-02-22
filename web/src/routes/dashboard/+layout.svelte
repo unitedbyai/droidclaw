@@ -73,8 +73,10 @@
 		</div>
 	</aside>
 
-	<main class="flex-1 p-8">
-		{@render children?.()}
+	<main class="flex-1 overflow-auto p-8">
+		<div class="mx-auto max-w-5xl">
+			{@render children?.()}
+		</div>
 	</main>
 </div>
 

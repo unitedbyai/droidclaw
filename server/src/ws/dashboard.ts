@@ -70,7 +70,7 @@ export async function handleDashboardMessage(
         ws.send(
           JSON.stringify({
             type: "device_online",
-            deviceId: device.deviceId,
+            deviceId: device.persistentDeviceId ?? device.deviceId,
             name,
           })
         );
