@@ -26,9 +26,9 @@
 	let activeTab = $state<'overview' | 'sessions' | 'run'>('overview');
 
 	const tabs = [
-		{ id: 'overview' as const, label: 'Overview', icon: 'ph:info-duotone' },
-		{ id: 'sessions' as const, label: 'Sessions', icon: 'ph:clock-counter-clockwise-duotone' },
-		{ id: 'run' as const, label: 'Run', icon: 'ph:play-duotone' }
+		{ id: 'overview' as const, label: 'Overview', icon: 'solar:info-circle-bold-duotone' },
+		{ id: 'sessions' as const, label: 'Sessions', icon: 'solar:history-bold-duotone' },
+		{ id: 'run' as const, label: 'Run', icon: 'solar:play-bold-duotone' }
 	];
 
 	// Device data from DB
@@ -209,365 +209,366 @@
 <div class="mb-6 flex items-center gap-3">
 	<a
 		href="/dashboard/devices"
-		class="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
+		class="flex h-9 w-9 items-center justify-center rounded-full text-stone-400 transition-colors hover:bg-white hover:text-stone-600"
 	>
-		<Icon icon="ph:arrow-left-duotone" class="h-5 w-5" />
+		<Icon icon="solar:alt-arrow-left-linear" class="h-5 w-5" />
 	</a>
-	<div>
-		<h2 class="text-2xl font-bold">{deviceData?.model ?? deviceId.slice(0, 8)}</h2>
-		{#if deviceData?.manufacturer}
-			<p class="text-sm text-neutral-500">{deviceData.manufacturer}</p>
-		{/if}
-	</div>
-	<span
-		class="ml-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium
-			{deviceData?.status === 'online'
-			? 'bg-green-50 text-green-700'
-			: 'bg-neutral-100 text-neutral-500'}"
-	>
+	<div class="flex items-center gap-3">
+		<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full {deviceData?.status === 'online' ? 'bg-emerald-100' : 'bg-stone-200'}">
+			<Icon icon="solar:smartphone-bold-duotone" class="h-5 w-5 {deviceData?.status === 'online' ? 'text-emerald-600' : 'text-stone-400'}" />
+		</div>
+		<div>
+			<h2 class="text-2xl font-bold">{deviceData?.model ?? deviceId.slice(0, 8)}</h2>
+			{#if deviceData?.manufacturer}
+				<p class="text-sm text-stone-500">{deviceData.manufacturer}</p>
+			{/if}
+		</div>
 		<span
-			class="inline-block h-1.5 w-1.5 rounded-full {deviceData?.status === 'online'
-				? 'bg-green-500'
-				: 'bg-neutral-300'}"
-		></span>
-		{deviceData?.status === 'online' ? 'Online' : 'Offline'}
-	</span>
+			class="ml-1 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium
+				{deviceData?.status === 'online'
+				? 'bg-emerald-50 text-emerald-700'
+				: 'bg-stone-200 text-stone-500'}"
+		>
+			<span
+				class="inline-block h-1.5 w-1.5 rounded-full {deviceData?.status === 'online'
+					? 'bg-emerald-500'
+					: 'bg-stone-400'}"
+			></span>
+			{deviceData?.status === 'online' ? 'Online' : 'Offline'}
+		</span>
+	</div>
 </div>
 
 <!-- Tabs -->
-<div class="mb-6 flex gap-1 rounded-xl bg-neutral-100 p-1">
+<div class="mb-6 flex gap-1 rounded-full bg-white p-1">
 	{#each tabs as tab}
 		<button
 			onclick={() => {
 				activeTab = tab.id;
 				track(DEVICE_TAB_CHANGE, { tab: tab.id });
 			}}
-			class="flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors
+			class="flex flex-1 items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium transition-colors
 				{activeTab === tab.id
-				? 'bg-white text-neutral-900 shadow-sm'
-				: 'text-neutral-500 hover:text-neutral-700'}"
+				? 'bg-stone-900 text-white'
+				: 'text-stone-500 hover:text-stone-700'}"
 		>
 			<Icon
 				icon={tab.icon}
-				class="h-4 w-4 {activeTab === tab.id ? 'text-neutral-700' : 'text-neutral-400'}"
+				class="h-4 w-4 {activeTab === tab.id ? 'text-white' : 'text-stone-400'}"
 			/>
 			{tab.label}
 			{#if tab.id === 'run' && runStatus === 'running'}
-				<span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"></span>
+				<span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400"></span>
 			{/if}
 		</button>
 	{/each}
 </div>
 
-<div class="max-w-3xl">
-	<!-- Overview Tab -->
-	{#if activeTab === 'overview'}
-		<div class="grid gap-4 sm:grid-cols-2">
-			<!-- Device Specs -->
-			<div class="rounded-xl border border-neutral-200 p-5">
-				<div class="mb-3 flex items-center gap-2">
-					<Icon icon="ph:device-mobile-duotone" class="h-4.5 w-4.5 text-neutral-400" />
-					<h3 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-						Device Info
-					</h3>
-				</div>
-				<dl class="space-y-2.5">
-					{#if deviceData?.model}
-						<div class="flex justify-between text-sm">
-							<dt class="text-neutral-500">Model</dt>
-							<dd class="font-medium">{deviceData.model}</dd>
-						</div>
-					{/if}
-					{#if deviceData?.manufacturer}
-						<div class="flex justify-between text-sm">
-							<dt class="text-neutral-500">Manufacturer</dt>
-							<dd class="font-medium">{deviceData.manufacturer}</dd>
-						</div>
-					{/if}
-					{#if deviceData?.androidVersion}
-						<div class="flex justify-between text-sm">
-							<dt class="text-neutral-500">Android</dt>
-							<dd class="font-medium">{deviceData.androidVersion}</dd>
-						</div>
-					{/if}
-					{#if deviceData?.screenWidth && deviceData?.screenHeight}
-						<div class="flex justify-between text-sm">
-							<dt class="text-neutral-500">Resolution</dt>
-							<dd class="font-medium">{deviceData.screenWidth} x {deviceData.screenHeight}</dd>
-						</div>
-					{/if}
-					{#if battery !== null && battery >= 0}
-						<div class="flex justify-between text-sm">
-							<dt class="text-neutral-500">Battery</dt>
-							<dd class="flex items-center gap-1.5 font-medium {battery <= 20 ? 'text-red-600' : ''}">
-								<Icon
-									icon={charging ? 'ph:battery-charging-duotone' : battery > 50 ? 'ph:battery-high-duotone' : 'ph:battery-low-duotone'}
-									class="h-4 w-4"
-								/>
-								{battery}%{charging ? ' Charging' : ''}
-							</dd>
-						</div>
-					{/if}
-					<div class="flex justify-between text-sm">
-						<dt class="text-neutral-500">Last seen</dt>
-						<dd class="font-medium">
-							{deviceData ? relativeTime(deviceData.lastSeen) : '\u2014'}
-						</dd>
+<!-- Overview Tab -->
+{#if activeTab === 'overview'}
+	<div class="grid gap-4 sm:grid-cols-2">
+		<!-- Device Specs -->
+		<div>
+			<p class="mb-3 text-sm font-medium text-stone-500">Device info</p>
+			<div class="rounded-2xl bg-white">
+				{#if deviceData?.model}
+					<div class="flex justify-between px-6 py-3.5 text-sm">
+						<span class="text-stone-500">Model</span>
+						<span class="font-medium text-stone-900">{deviceData.model}</span>
 					</div>
-				</dl>
-			</div>
-
-			<!-- Stats -->
-			<div class="rounded-xl border border-neutral-200 p-5">
-				<div class="mb-3 flex items-center gap-2">
-					<Icon icon="ph:chart-bar-duotone" class="h-4.5 w-4.5 text-neutral-400" />
-					<h3 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-						Stats
-					</h3>
-				</div>
-				<div class="grid grid-cols-3 gap-3 text-center">
-					<div class="rounded-lg bg-neutral-50 p-3">
-						<div class="mb-1 flex justify-center">
-							<Icon icon="ph:stack-duotone" class="h-5 w-5 text-neutral-400" />
-						</div>
-						<p class="text-2xl font-bold">{stats?.totalSessions ?? 0}</p>
-						<p class="text-xs text-neutral-500">Sessions</p>
+				{/if}
+				{#if deviceData?.manufacturer}
+					<div class="flex justify-between border-t border-stone-100 px-6 py-3.5 text-sm">
+						<span class="text-stone-500">Manufacturer</span>
+						<span class="font-medium text-stone-900">{deviceData.manufacturer}</span>
 					</div>
-					<div class="rounded-lg bg-neutral-50 p-3">
-						<div class="mb-1 flex justify-center">
-							<Icon icon="ph:chart-line-up-duotone" class="h-5 w-5 text-green-500" />
-						</div>
-						<p class="text-2xl font-bold">{stats?.successRate ?? 0}%</p>
-						<p class="text-xs text-neutral-500">Success</p>
+				{/if}
+				{#if deviceData?.androidVersion}
+					<div class="flex justify-between border-t border-stone-100 px-6 py-3.5 text-sm">
+						<span class="text-stone-500">Android</span>
+						<span class="font-medium text-stone-900">{deviceData.androidVersion}</span>
 					</div>
-					<div class="rounded-lg bg-neutral-50 p-3">
-						<div class="mb-1 flex justify-center">
-							<Icon icon="ph:footprints-duotone" class="h-5 w-5 text-blue-500" />
-						</div>
-						<p class="text-2xl font-bold">{stats?.avgSteps ?? 0}</p>
-						<p class="text-xs text-neutral-500">Avg Steps</p>
+				{/if}
+				{#if deviceData?.screenWidth && deviceData?.screenHeight}
+					<div class="flex justify-between border-t border-stone-100 px-6 py-3.5 text-sm">
+						<span class="text-stone-500">Resolution</span>
+						<span class="font-medium text-stone-900">{deviceData.screenWidth} &times; {deviceData.screenHeight}</span>
 					</div>
+				{/if}
+				{#if battery !== null && battery >= 0}
+					<div class="flex justify-between border-t border-stone-100 px-6 py-3.5 text-sm">
+						<span class="text-stone-500">Battery</span>
+						<span class="flex items-center gap-1.5 font-medium {battery <= 20 ? 'text-red-600' : 'text-stone-900'}">
+							<Icon
+								icon={charging ? 'solar:battery-charge-bold-duotone' : battery > 50 ? 'solar:battery-full-bold-duotone' : 'solar:battery-low-bold-duotone'}
+								class="h-4 w-4"
+							/>
+							{battery}%{charging ? ' Charging' : ''}
+						</span>
+					</div>
+				{/if}
+				<div class="flex justify-between border-t border-stone-100 px-6 py-3.5 text-sm">
+					<span class="text-stone-500">Last seen</span>
+					<span class="font-medium text-stone-900">
+						{deviceData ? relativeTime(deviceData.lastSeen) : '\u2014'}
+					</span>
 				</div>
 			</div>
 		</div>
 
-		<!-- Installed Apps -->
-		{#if deviceData && deviceData.installedApps.length > 0}
-			<div class="mt-4 rounded-xl border border-neutral-200">
-				<div class="flex items-center justify-between border-b border-neutral-100 px-5 py-3">
-					<div class="flex items-center gap-2">
-						<Icon icon="ph:grid-four-duotone" class="h-4.5 w-4.5 text-neutral-400" />
-						<h3 class="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-							Installed Apps
-							<span class="ml-1 font-normal normal-case text-neutral-400"
-								>({deviceData.installedApps.length})</span
-							>
-						</h3>
-					</div>
-					<div class="relative">
-						<Icon
-							icon="ph:magnifying-glass-duotone"
-							class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400"
-						/>
-						<input
-							type="text"
-							bind:value={appSearch}
-							placeholder="Search apps..."
-							class="w-48 rounded-lg border border-neutral-200 py-1 pl-8 pr-2.5 text-xs focus:border-neutral-400 focus:outline-none"
-						/>
-					</div>
-				</div>
-				<div class="max-h-72 overflow-y-auto">
-					{#each filteredApps as app (app.packageName)}
-						<div
-							class="flex items-center justify-between px-5 py-2 text-sm hover:bg-neutral-50"
-						>
-							<span class="font-medium">{app.label}</span>
-							<span class="font-mono text-xs text-neutral-400">{app.packageName}</span>
+		<!-- Stats -->
+		<div>
+			<p class="mb-3 text-sm font-medium text-stone-500">Stats</p>
+			<div class="rounded-2xl bg-white p-5">
+				<div class="grid grid-cols-3 gap-3 text-center">
+					<div class="rounded-xl bg-stone-50 p-4">
+						<div class="mb-1.5 flex justify-center">
+							<div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100">
+								<Icon icon="solar:layers-bold-duotone" class="h-4 w-4 text-blue-600" />
+							</div>
 						</div>
-					{:else}
-						<p class="px-5 py-3 text-xs text-neutral-400">No apps match "{appSearch}"</p>
-					{/each}
+						<p class="text-2xl font-bold text-stone-900">{stats?.totalSessions ?? 0}</p>
+						<p class="text-xs text-stone-500">Sessions</p>
+					</div>
+					<div class="rounded-xl bg-stone-50 p-4">
+						<div class="mb-1.5 flex justify-center">
+							<div class="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100">
+								<Icon icon="solar:chart-2-bold-duotone" class="h-4 w-4 text-emerald-600" />
+							</div>
+						</div>
+						<p class="text-2xl font-bold text-stone-900">{stats?.successRate ?? 0}%</p>
+						<p class="text-xs text-stone-500">Success</p>
+					</div>
+					<div class="rounded-xl bg-stone-50 p-4">
+						<div class="mb-1.5 flex justify-center">
+							<div class="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100">
+								<Icon icon="solar:routing-bold-duotone" class="h-4 w-4 text-purple-600" />
+							</div>
+						</div>
+						<p class="text-2xl font-bold text-stone-900">{stats?.avgSteps ?? 0}</p>
+						<p class="text-xs text-stone-500">Avg Steps</p>
+					</div>
 				</div>
 			</div>
-		{/if}
+		</div>
+	</div>
 
-		<!-- Sessions Tab -->
-	{:else if activeTab === 'sessions'}
-		{#if sessions.length === 0}
-			<div class="rounded-xl border border-neutral-200 p-10 text-center">
-				<Icon icon="ph:clock-counter-clockwise-duotone" class="mx-auto mb-3 h-8 w-8 text-neutral-300" />
-				<p class="text-sm text-neutral-500">No sessions yet. Go to the Run tab to send a goal.</p>
+	<!-- Installed Apps -->
+	{#if deviceData && deviceData.installedApps.length > 0}
+		<div class="mt-6">
+			<div class="mb-3 flex items-center justify-between">
+				<p class="text-sm font-medium text-stone-500">
+					Installed apps
+					<span class="text-stone-400">({deviceData.installedApps.length})</span>
+				</p>
+				<div class="relative">
+					<Icon
+						icon="solar:magnifer-bold-duotone"
+						class="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400"
+					/>
+					<input
+						type="text"
+						bind:value={appSearch}
+						placeholder="Search apps..."
+						class="w-48 rounded-lg border border-stone-200 bg-white py-1.5 pl-8 pr-2.5 text-xs focus:border-stone-400 focus:outline-none"
+					/>
+				</div>
 			</div>
-		{:else}
-			<div class="divide-y divide-neutral-100 rounded-xl border border-neutral-200">
-				{#each sessions as sess (sess.id)}
-					<div>
-						<button
-							onclick={() => toggleSession(sess.id)}
-							class="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-neutral-50"
+			<div class="max-h-72 overflow-y-auto rounded-2xl bg-white">
+				{#each filteredApps as app, i (app.packageName)}
+					<div
+						class="flex items-center justify-between px-6 py-3 text-sm hover:bg-stone-50
+							{i > 0 ? 'border-t border-stone-100' : ''}"
+					>
+						<span class="font-medium text-stone-900">{app.label}</span>
+						<span class="font-mono text-xs text-stone-400">{app.packageName}</span>
+					</div>
+				{:else}
+					<p class="px-6 py-4 text-xs text-stone-400">No apps match "{appSearch}"</p>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
+<!-- Sessions Tab -->
+{:else if activeTab === 'sessions'}
+	{#if sessions.length === 0}
+		<div class="rounded-2xl bg-white p-10 text-center">
+			<div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100">
+				<Icon icon="solar:history-bold-duotone" class="h-6 w-6 text-stone-400" />
+			</div>
+			<p class="text-sm text-stone-500">No sessions yet. Go to the Run tab to send a goal.</p>
+		</div>
+	{:else}
+		<p class="mb-3 text-sm font-medium text-stone-500">Session history</p>
+		<div class="rounded-2xl bg-white">
+			{#each sessions as sess, i (sess.id)}
+				<div class={i > 0 ? 'border-t border-stone-100' : ''}>
+					<button
+						onclick={() => toggleSession(sess.id)}
+						class="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-stone-50
+							{i === 0 ? 'rounded-t-2xl' : ''}
+							{i === sessions.length - 1 && expandedSession !== sess.id ? 'rounded-b-2xl' : ''}"
+					>
+						<div class="min-w-0 flex-1">
+							<p class="truncate text-sm font-medium text-stone-900">{sess.goal}</p>
+							<p class="mt-0.5 flex items-center gap-1.5 text-xs text-stone-400">
+								<Icon icon="solar:clock-circle-bold-duotone" class="h-3.5 w-3.5" />
+								{formatTime(sess.startedAt)} &middot; {sess.stepsUsed} steps
+							</p>
+						</div>
+						<span
+							class="ml-3 flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium {sess.status ===
+							'completed'
+								? 'bg-emerald-50 text-emerald-700'
+								: sess.status === 'running'
+									? 'bg-amber-50 text-amber-700'
+									: 'bg-red-50 text-red-700'}"
 						>
-							<div class="min-w-0 flex-1">
-								<p class="truncate text-sm font-medium">{sess.goal}</p>
-								<p class="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-400">
-									<Icon icon="ph:clock-duotone" class="h-3.5 w-3.5" />
-									{formatTime(sess.startedAt)} &middot; {sess.stepsUsed} steps
-								</p>
-							</div>
-							<span
-								class="ml-3 flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium {sess.status ===
-								'completed'
-									? 'bg-green-50 text-green-700'
+							<Icon
+								icon={sess.status === 'completed'
+									? 'solar:check-circle-bold-duotone'
 									: sess.status === 'running'
-										? 'bg-amber-50 text-amber-700'
-										: 'bg-red-50 text-red-700'}"
-							>
-								<Icon
-									icon={sess.status === 'completed'
-										? 'ph:check-circle-duotone'
-										: sess.status === 'running'
-											? 'ph:circle-notch-duotone'
-											: 'ph:x-circle-duotone'}
-									class="h-3.5 w-3.5"
-								/>
-								{sess.status === 'completed'
-									? 'Success'
-									: sess.status === 'running'
-										? 'Running'
-										: 'Failed'}
-							</span>
-						</button>
-						{#if expandedSession === sess.id}
-							<div class="border-t border-neutral-100 bg-neutral-50 px-5 py-3">
-								{#if sessionSteps.has(sess.id)}
-									<div class="space-y-2">
-										{#each sessionSteps.get(sess.id) ?? [] as s (s.id)}
-											<div class="flex items-baseline gap-2">
-												<span
-													class="shrink-0 rounded bg-neutral-200 px-1.5 py-0.5 font-mono text-[10px] text-neutral-500"
+										? 'solar:refresh-circle-bold-duotone'
+										: 'solar:close-circle-bold-duotone'}
+								class="h-3.5 w-3.5"
+							/>
+							{sess.status === 'completed'
+								? 'Success'
+								: sess.status === 'running'
+									? 'Running'
+									: 'Failed'}
+						</span>
+					</button>
+					{#if expandedSession === sess.id}
+						<div class="border-t border-stone-100 bg-stone-50 px-6 py-4
+							{i === sessions.length - 1 ? 'rounded-b-2xl' : ''}">
+							{#if sessionSteps.has(sess.id)}
+								<div class="space-y-2.5">
+									{#each sessionSteps.get(sess.id) ?? [] as s (s.id)}
+										<div class="flex items-baseline gap-2.5">
+											<span
+												class="shrink-0 rounded-full bg-stone-200 px-2 py-0.5 font-mono text-[10px] text-stone-500"
+											>
+												{s.stepNumber}
+											</span>
+											<div class="min-w-0">
+												<span class="font-mono text-xs font-medium text-stone-800"
+													>{JSON.stringify(s.action)}</span
 												>
-													{s.stepNumber}
-												</span>
-												<div class="min-w-0">
-													<span class="font-mono text-xs font-medium"
-														>{JSON.stringify(s.action)}</span
-													>
-													{#if s.reasoning}
-														<p class="truncate text-xs text-neutral-400">
-															{s.reasoning}
-														</p>
-													{/if}
-												</div>
+												{#if s.reasoning}
+													<p class="truncate text-xs text-stone-400">
+														{s.reasoning}
+													</p>
+												{/if}
 											</div>
-										{/each}
-									</div>
-								{:else}
-									<p class="text-xs text-neutral-400">Loading steps...</p>
-								{/if}
-							</div>
+										</div>
+									{/each}
+								</div>
+							{:else}
+								<p class="text-xs text-stone-400">Loading steps...</p>
+							{/if}
+						</div>
+					{/if}
+				</div>
+			{/each}
+		</div>
+	{/if}
+
+<!-- Run Tab -->
+{:else if activeTab === 'run'}
+	<!-- Goal Input -->
+	<p class="mb-3 text-sm font-medium text-stone-500">Send a goal</p>
+	<div class="mb-6 rounded-2xl bg-white p-6">
+		<div class="flex gap-3">
+			<input
+				type="text"
+				bind:value={goal}
+				placeholder="e.g., Open YouTube and search for lofi beats"
+				class="flex-1 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm focus:border-stone-400 focus:outline-none"
+				disabled={runStatus === 'running'}
+				onkeydown={(e) => e.key === 'Enter' && submitGoal()}
+			/>
+			{#if runStatus === 'running'}
+				<button
+					onclick={stopGoal}
+					class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
+				>
+					<Icon icon="solar:stop-bold" class="h-4 w-4" />
+					Stop
+				</button>
+			{:else}
+				<button
+					onclick={submitGoal}
+					class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white hover:bg-stone-800"
+				>
+					<Icon icon="solar:play-bold" class="h-4 w-4" />
+					Run
+				</button>
+			{/if}
+		</div>
+	</div>
+
+	<!-- Live Steps -->
+	{#if steps.length > 0 || runStatus !== 'idle'}
+		<p class="mb-3 text-sm font-medium text-stone-500">
+			{currentGoal ? currentGoal : 'Current run'}
+		</p>
+		<div class="rounded-2xl bg-white">
+			<!-- Status bar -->
+			<div class="flex items-center justify-between px-6 py-3.5">
+				<span class="text-sm font-medium text-stone-900">
+					{steps.length} step{steps.length !== 1 ? 's' : ''}
+				</span>
+				{#if runStatus === 'running'}
+					<span class="flex items-center gap-1.5 text-xs font-medium text-amber-600">
+						<span
+							class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"
+						></span>
+						Running
+					</span>
+				{:else if runStatus === 'completed'}
+					<span class="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
+						<Icon icon="solar:check-circle-bold-duotone" class="h-4 w-4" />
+						Completed
+					</span>
+				{:else if runStatus === 'failed'}
+					<span class="flex items-center gap-1.5 text-xs font-medium text-red-600">
+						<Icon icon="solar:close-circle-bold-duotone" class="h-4 w-4" />
+						Failed
+					</span>
+				{/if}
+			</div>
+
+			{#if runError}
+				<div class="flex items-center gap-2 border-t border-red-100 bg-red-50 px-6 py-3 text-xs text-red-700">
+					<Icon icon="solar:danger-triangle-bold-duotone" class="h-4 w-4 shrink-0" />
+					{runError}
+				</div>
+			{/if}
+
+			{#if steps.length > 0}
+				{#each steps as s (s.step)}
+					<div class="border-t border-stone-100 px-6 py-3">
+						<div class="flex items-baseline gap-2.5">
+							<span
+								class="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 font-mono text-[10px] text-stone-500"
+							>
+								{s.step}
+							</span>
+							<span class="font-mono text-xs font-medium text-stone-800">{s.action}</span>
+						</div>
+						{#if s.reasoning}
+							<p class="mt-0.5 pl-8 text-xs text-stone-500">{s.reasoning}</p>
 						{/if}
 					</div>
 				{/each}
-			</div>
-		{/if}
-
-		<!-- Run Tab -->
-	{:else if activeTab === 'run'}
-		<!-- Goal Input -->
-		<div class="mb-6 rounded-xl border border-neutral-200 p-5">
-			<div class="mb-3 flex items-center gap-2">
-				<Icon icon="ph:target-duotone" class="h-4.5 w-4.5 text-neutral-500" />
-				<h3 class="text-sm font-semibold">Send a Goal</h3>
-			</div>
-			<div class="flex gap-3">
-				<input
-					type="text"
-					bind:value={goal}
-					placeholder="e.g., Open YouTube and search for lofi beats"
-					class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:border-neutral-500 focus:outline-none"
-					disabled={runStatus === 'running'}
-					onkeydown={(e) => e.key === 'Enter' && submitGoal()}
-				/>
-				{#if runStatus === 'running'}
-					<button
-						onclick={stopGoal}
-						class="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
-					>
-						<Icon icon="ph:stop-duotone" class="h-4 w-4" />
-						Stop
-					</button>
-				{:else}
-					<button
-						onclick={submitGoal}
-						class="flex items-center gap-2 rounded-lg bg-neutral-800 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700"
-					>
-						<Icon icon="ph:play-duotone" class="h-4 w-4" />
-						Run
-					</button>
-				{/if}
-			</div>
-		</div>
-
-		<!-- Live Steps -->
-		{#if steps.length > 0 || runStatus !== 'idle'}
-			<div class="rounded-xl border border-neutral-200">
-				<div
-					class="flex items-center justify-between border-b border-neutral-200 px-5 py-3"
-				>
-					<h3 class="flex items-center gap-2 text-sm font-semibold">
-						<Icon icon="ph:list-checks-duotone" class="h-4.5 w-4.5 text-neutral-400" />
-						{currentGoal ? `Goal: ${currentGoal}` : 'Current Run'}
-					</h3>
-					{#if runStatus === 'running'}
-						<span class="flex items-center gap-1.5 text-xs font-medium text-amber-600">
-							<span
-								class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"
-							></span>
-							Running
-						</span>
-					{:else if runStatus === 'completed'}
-						<span class="flex items-center gap-1.5 text-xs font-medium text-green-600">
-							<Icon icon="ph:check-circle-duotone" class="h-4 w-4" />
-							Completed
-						</span>
-					{:else if runStatus === 'failed'}
-						<span class="flex items-center gap-1.5 text-xs font-medium text-red-600">
-							<Icon icon="ph:x-circle-duotone" class="h-4 w-4" />
-							Failed
-						</span>
-					{/if}
+			{:else}
+				<div class="flex items-center gap-2 border-t border-stone-100 px-6 py-4 text-xs text-stone-400">
+					<Icon icon="solar:refresh-circle-bold-duotone" class="h-4 w-4 animate-spin" />
+					Waiting for first step...
 				</div>
-				{#if runError}
-					<div class="flex items-center gap-2 border-t border-red-100 bg-red-50 px-5 py-3 text-xs text-red-700">
-						<Icon icon="ph:warning-duotone" class="h-4 w-4 shrink-0" />
-						{runError}
-					</div>
-				{/if}
-				{#if steps.length > 0}
-					<div class="divide-y divide-neutral-100">
-						{#each steps as s (s.step)}
-							<div class="px-5 py-2.5">
-								<div class="flex items-baseline gap-2">
-									<span
-										class="shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] text-neutral-500"
-									>
-										{s.step}
-									</span>
-									<span class="font-mono text-xs font-medium">{s.action}</span>
-								</div>
-								{#if s.reasoning}
-									<p class="mt-0.5 pl-7 text-xs text-neutral-500">{s.reasoning}</p>
-								{/if}
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<div class="flex items-center gap-2 px-5 py-3 text-xs text-neutral-400">
-						<Icon icon="ph:circle-notch-duotone" class="h-4 w-4 animate-spin" />
-						Waiting for first step...
-					</div>
-				{/if}
-			</div>
-		{/if}
+			{/if}
+		</div>
 	{/if}
-</div>
+{/if}

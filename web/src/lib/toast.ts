@@ -16,7 +16,7 @@ export const toast = {
 			...toastDefaults,
 			description,
 			icon: IconToast,
-			componentProps: { icon: 'ph:check-circle-duotone', class: 'h-5 w-5 text-emerald-400' }
+			componentProps: { icon: 'line-md:confirm-circle', class: 'h-5 w-5 text-emerald-400' }
 		});
 	},
 	error(message: string, description?: string) {
@@ -24,7 +24,7 @@ export const toast = {
 			...toastDefaults,
 			description,
 			icon: IconToast,
-			componentProps: { icon: 'ph:x-circle-duotone', class: 'h-5 w-5 text-red-400' }
+			componentProps: { icon: 'line-md:close-circle', class: 'h-5 w-5 text-red-400' }
 		});
 	},
 	info(message: string, description?: string) {
@@ -32,7 +32,7 @@ export const toast = {
 			...toastDefaults,
 			description,
 			icon: IconToast,
-			componentProps: { icon: 'ph:info-duotone', class: 'h-5 w-5 text-blue-400' }
+			componentProps: { icon: 'line-md:alert-circle', class: 'h-5 w-5 text-blue-400' }
 		});
 	},
 	warning(message: string, description?: string) {
@@ -40,7 +40,7 @@ export const toast = {
 			...toastDefaults,
 			description,
 			icon: IconToast,
-			componentProps: { icon: 'ph:warning-duotone', class: 'h-5 w-5 text-amber-400' }
+			componentProps: { icon: 'line-md:alert', class: 'h-5 w-5 text-amber-400' }
 		});
 	}
 };
