@@ -383,6 +383,36 @@ the multi-step skills are interesting — they replace 5-10 manual actions with 
 
 ## config
 
+### optional CLI web research
+
+The CLI agent can search the public web and fetch pages through
+[Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp)
+without switching away from the app on your phone. Search uses Fast mode, with
+no Parallel account or API key required. Enable it in `.env`:
+
+```bash
+WEB_SEARCH_PROVIDER=parallel
+WEB_SEARCH_TIMEOUT_MS=30000
+```
+
+Run `bun run src/kernel.ts` and ask for a task such as "research the latest Bun
+release notes and draft a summary in my notes app". The agent can use
+`web_search` with a `query`, then `web_fetch` with a source `url`; source text and
+URLs return to its next decision. Existing phone actions remain available,
+including Google search and signed-in app content. This option applies to the
+CLI agent and its AI workflows, not the hosted dashboard or deterministic flows.
+
+The default `WEB_SEARCH_PROVIDER=device` keeps research on the phone. Set it to
+`none` to explicitly disable host-side web research. Neither setting contacts
+Parallel. Enabling `parallel` permits the model to send search queries and page
+URLs to Parallel; results are also included in local session logs. Requests have
+a configurable timeout and service errors, including anonymous usage limits,
+return as failed actions without automatically switching providers. Each goal
+uses a new opaque search session ID, reused for its search and fetch calls.
+
+Developers embedding `runAgent` can cancel web requests with an `AbortSignal`:
+`runAgent(goal, maxSteps, { signal })`.
+
 all configuration lives in `.env`. here's what you can tweak:
 
 | key | default | what it does |
@@ -395,6 +425,8 @@ all configuration lives in `.env`. here's what you can tweak:
 | `MAX_ELEMENTS` | 40 | max ui elements sent to the llm per step (scored & ranked) |
 | `MAX_HISTORY_STEPS` | 10 | how many past steps to keep in conversation context |
 | `STREAMING_ENABLED` | true | stream llm responses (shows progress dots) |
+| `WEB_SEARCH_PROVIDER` | device | CLI web research: `device`, opt-in `parallel`, or `none` |
+| `WEB_SEARCH_TIMEOUT_MS` | 30000 | timeout for each Search MCP request |
 | `LOG_DIR` | logs | directory for session json logs |
 
 ---
@@ -474,6 +506,7 @@ bun run src/kernel.ts --flow file.yaml         # run a deterministic flow
 bun install                                    # install dependencies
 bun run build                                  # compile to dist/
 bun run typecheck                              # type-check (tsc --noEmit)
+bun run test:search                            # scripted CLI/MCP caller tests (no phone or keys)
 ```
 
 ---

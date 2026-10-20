@@ -57,6 +57,10 @@ export const Config = {
   // Streaming responses
   STREAMING_ENABLED: env("STREAMING_ENABLED", String(DEFAULT_STREAMING_ENABLED)) === "true",
 
+  // Optional host-side web access; device-based search remains the default.
+  WEB_SEARCH_PROVIDER: env("WEB_SEARCH_PROVIDER", "device"),
+  WEB_SEARCH_TIMEOUT_MS: Number(env("WEB_SEARCH_TIMEOUT_MS", "30000")),
+
   // LLM Provider: "groq", "openai", "bedrock", "openrouter", or "ollama"
   LLM_PROVIDER: env("LLM_PROVIDER", "groq"),
 
@@ -90,6 +94,12 @@ export const Config = {
   },
 
   validate(): void {
+    if (!["device", "parallel", "none"].includes(Config.WEB_SEARCH_PROVIDER)) {
+      throw new Error("WEB_SEARCH_PROVIDER must be device, parallel, or none");
+    }
+    if (!Number.isSafeInteger(Config.WEB_SEARCH_TIMEOUT_MS) || Config.WEB_SEARCH_TIMEOUT_MS <= 0) {
+      throw new Error("WEB_SEARCH_TIMEOUT_MS must be a positive integer");
+    }
     const provider = Config.LLM_PROVIDER;
     if (provider === "groq" && !Config.GROQ_API_KEY) {
       throw new Error("GROQ_API_KEY is required when using Groq provider");
